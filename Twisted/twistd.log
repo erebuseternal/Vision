@@ -1,0 +1,22 @@
+2016-01-05 18:19:30-0500 [-] Log opened.
+2016-01-05 18:19:30-0500 [-] twistd 15.5.0 (/usr/bin/python 2.7.10) starting up.
+2016-01-05 18:19:30-0500 [-] reactor class: twisted.internet.epollreactor.EPollReactor.
+2016-01-05 18:19:30-0500 [-] Site starting on 80
+2016-01-05 18:19:30-0500 [-] Starting factory <twisted.web.server.Site instance at 0xb64cf72c>
+2016-01-05 18:19:40-0500 [-] "127.0.0.1" - - [05/Jan/2016:23:19:40 +0000] "GET / HTTP/1.1" 200 95 "-" "Mozilla/5.0 (X11; Fedora; Linux i686; rv:43.0) Gecko/20100101 Firefox/43.0"
+2016-01-05 18:19:41-0500 [-] "127.0.0.1" - - [05/Jan/2016:23:19:40 +0000] "GET /favicon.ico HTTP/1.1" 404 145 "-" "Mozilla/5.0 (X11; Fedora; Linux i686; rv:43.0) Gecko/20100101 Firefox/43.0"
+2016-01-05 18:23:30-0500 [-] Received SIGTERM, shutting down.
+2016-01-05 18:23:30-0500 [-] (TCP Port 80 Closed)
+2016-01-05 18:23:30-0500 [-] Stopping factory <twisted.web.server.Site instance at 0xb64cf72c>
+2016-01-05 18:23:30-0500 [-] Main loop terminated.
+2016-01-05 18:23:30-0500 [-] Server Shut Down.
+2016-01-05 18:23:37-0500 [-] Log opened.
+2016-01-05 18:23:37-0500 [-] twistd 15.5.0 (/usr/bin/python 2.7.10) starting up.
+2016-01-05 18:23:37-0500 [-] reactor class: twisted.internet.epollreactor.EPollReactor.
+2016-01-05 18:23:37-0500 [-] Site starting on 80
+2016-01-05 18:23:37-0500 [-] Starting factory <twisted.web.server.Site instance at 0xb63e572c>
+2016-01-05 18:23:49-0500 [-] Received SIGTERM, shutting down.
+2016-01-05 18:23:49-0500 [-] (TCP Port 80 Closed)
+2016-01-05 18:23:49-0500 [-] Stopping factory <twisted.web.server.Site instance at 0xb63e572c>
+2016-01-05 18:23:49-0500 [-] Main loop terminated.
+2016-01-05 18:23:49-0500 [-] Server Shut Down.

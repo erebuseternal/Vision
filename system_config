@@ -1,0 +1,3 @@
+# this will be where we tell our python file where everything is :)
+Zookeeper /var/Vision/ZooKeeper
+Solr /var/STAR/Solr

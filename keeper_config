@@ -1,0 +1,4 @@
+# configuration file for actual zookeeper and solr instances
+Zookeeper zoo.cfg
+Zookeeper zoo2.cfg
+Zookeeper zoo3.cfg
