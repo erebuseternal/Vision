@@ -1,0 +1,85 @@
+Okay, so the first thing we have to deal with, is
+essentially configuration. Everything boils down to
+how this works.
+
+By configuration I mean the configuration of the schema
+and the names of folders, files, and machines that are
+going to be important to everything else.
+
+I am going to have this configuration file be XML.
+
+It will be divided into sections:
+System - this will define where to look for various things
+  like zookeeper or Solr
+Schema - this will define both the schema for the marketplace
+  as well as what the things will be named on the page, and how
+  to render them on the search page as well.
+
+System:
+  Phoenix query server port
+  Solr client port
+
+Schema
+  Each part of our schema represents a single field.
+  In identifies for the field, the field-name, the name
+  for the field on an HTML site, whether that field should
+  be faceted in search, whether we want to be able to search
+  by range, and the field type. To do all of this, I think
+  I'm going to do the following:
+    One will write the schema part out as if it is a schema.xml
+    file. Then, I will add an additional component where you go
+    ahead and add the additional properties for each field
+    you have defined. Note that for dynamic fields, their presentation
+    name will be exactly the bit that goes where the wild card
+    normally goes.
+
+So schema will divide into
+SolrSchema
+ClientScema
+
+Now of course there are going to be schemas for user, group, and one for each
+group's applications. For the latter we know there is going to have to be a way
+to create new cores all the time. So we are going to want to separate core
+creation from the system stuff.
+
+So we need to have a sys_config file and we need to have solr_schema files for
+each of the following: user, group, and each group's app. and we need
+client_schema for them as well.
+
+Okay, turning this into a project I can work on:
+I need to define what solr_schema and client_schema will be and I need to create
+a program that will take them and knowledge of either zookeeper or solr and go
+ahead and create the new collections.
+
+So to the first: solr_schema will just be a schema.xml file like Solr requires.
+To the second: we have the field_name as defined within the first config file.
+  Then we also specify whether we would like to have range search, faceting,
+  clustering, and what the name should be in presentation to the client. It
+  will be in the following form:
+
+  <field_name name="the_name" facet="yes/no" clustering="yes/no" etc />
+  <field_name ... />
+  ...
+
+I don't know yet well enough about doing all of this in a distributed mode,
+or at all to be able to do much of anything quite yet. So I need to become
+thoroughly familiar with SolrCloud (in distributed mode) so that this process
+can come off like water off the back of my hand. Only then can I be confident
+I am making good software.
+
+Everything comes down to the search stuff. The input handler, the handling of
+the schema, the creation of the HTML pages, the twisted apps (through the input
+handler), the parser. Everything depends on a thorough understanding of solr
+so I can see the implementation as well as the big picture in my head. I
+also should just get a real hand on how twisted is going to work, as well as
+phoenix and the lot. And I need to understand all of this in distributed and not
+just pseudo-distributed mode.
+
+Right now the implementation seems horrifyingly huge and scary. But only because
+I know so little about the tools I am going to be using. Once I know them well
+I can just sit down and write code, and see how everything breaks up in my mind.
+Right now, not only is the task huge, but I can only partially see. If I hope to
+write good code, and to write it with a frame of mind where every next alleyway
+is not frustrating, I need to master this stuff. Division of the problem. There
+is figuring out how the pieces will work on their own, and then how they patch
+together, if I go straight into it I will be trying to do both at the same time.
