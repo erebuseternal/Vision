@@ -107,7 +107,7 @@ def startKeepers(system_config, keeper_config):
             raise CommandException('%s in keeper configuration has value None' % key)
     # now that we know that that simple problem is out of the way, we are going to
     # go on blind faith... :P
-    zookeeper_dir = system_config.properties['Zookeeper']
+    zookeeper_dir = system_config.properties['Zookeeper'][0]
     keeper_configs = keeper_config.properties['Zookeeper']
     # we have to run through the stuff for each zookeeper we added in the config
     for config in keeper_configs:
@@ -125,9 +125,43 @@ def stopKeepers(system_config, keeper_config):
             raise CommandException('%s in keeper configuration has value None' % key)
     # now that we know that that simple problem is out of the way, we are going to
     # go on blind faith... :P
-    zookeeper_dir = system_config.properties['Zookeeper']
+    zookeeper_dir = system_config.properties['Zookeeper'][0]
     keeper_configs = keeper_config.properties['Zookeeper']
     # we have to run through the stuff for each zookeeper we added in the config
     for config in keeper_configs:
         keeper = Zookeeper(config, zookeeper_dir) # create a zookeeper handler object
         keeper.Stop()
+
+class SolrNode:
+    def __init__(self, solr_dir, port, home, keeper_list):
+        self.solr_dir = solr_dir
+        self.port = port
+        self.home = home
+        self.keeper_list = keeper_list
+
+    def Start(self):
+        keepers = ''
+        for keeper in self.keeper_list:
+            keepers = keepers + ',' + keeper
+        keepers = keepers[1:]
+        command = '%s/bin/solr start -p %s -s %s/%s -z %s' % (self.solr_dir, self.port, self.solr_dir, self.home, keepers)
+        printImportant('Starting solr node using: %s' % command)
+        os.system(command)
+
+def startSolrNodes(system_config, solr_config):
+    # first we get the data from the configuration
+    solr_dir = system_config.properties['Solr'][0]
+    zookeepers = solr_config.properties['ZookeeperAddresses'][0]
+    solr_nodes = solr_config.properties['Solr']
+    for node in solr_nodes:
+        port = node[0]
+        home = node[1]
+        solr_node = SolrNode(solr_dir, port, home, zookeepers)
+        solr_node.Start()
+
+def stopSolrNodes(system_config):
+    # just stop all here
+    solr_dir = system_config.properties['Solr'][0]
+    command = '%s/bin/solr stop -all' % solr_dir
+    printImportant('Stopping with command: %s' % command)
+    os.system(command)

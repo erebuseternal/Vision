@@ -71,7 +71,7 @@ class Configuration:
                     if current_value == self.defaults[key]:
                         self.properties[key] = [value]  # set up our list
                     else:
-                        self.properties.append(value)
+                        self.properties[key].append(value)
                 else:
                     print 'WARN: unidentified key found at line %s' % count
             else:
