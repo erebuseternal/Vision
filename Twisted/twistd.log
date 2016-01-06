@@ -186,3 +186,8 @@
 2016-01-05 19:37:39-0500 [-] "127.0.0.1" - - [06/Jan/2016:00:37:39 +0000] "GET / HTTP/1.1" 200 196 "-" "Mozilla/5.0 (X11; Fedora; Linux i686; rv:43.0) Gecko/20100101 Firefox/43.0"
 2016-01-05 19:37:44-0500 [-] "127.0.0.1" - - [06/Jan/2016:00:37:43 +0000] "POST / HTTP/1.1" 200 82 "http://localhost/" "Mozilla/5.0 (X11; Fedora; Linux i686; rv:43.0) Gecko/20100101 Firefox/43.0"
 2016-01-05 19:37:51-0500 [-] "127.0.0.1" - - [06/Jan/2016:00:37:51 +0000] "POST / HTTP/1.1" 200 89 "http://localhost/" "Mozilla/5.0 (X11; Fedora; Linux i686; rv:43.0) Gecko/20100101 Firefox/43.0"
+2016-01-05 19:43:20-0500 [-] Received SIGTERM, shutting down.
+2016-01-05 19:43:20-0500 [-] (TCP Port 80 Closed)
+2016-01-05 19:43:20-0500 [-] Stopping factory <twisted.web.server.Site instance at 0xb64fbf2c>
+2016-01-05 19:43:20-0500 [-] Main loop terminated.
+2016-01-05 19:43:20-0500 [-] Server Shut Down.

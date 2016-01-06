@@ -52,8 +52,13 @@ class Phoenix:
         self.ph_dir = ph_dir
 
     def Start(self):
-        command = '%s/bin/queryserver.py' % self.ph_dir
+        command = '%s/bin/queryserver.py start' % self.ph_dir
         printImportant('Starting query server with command: %s' % command)
+        os.system(command)
+
+    def Stop(self):
+        command = '%s/bin/queryserver.py stop' % self.ph_dir
+        printImportant('Stopping query server with command: %s' % command)
         os.system(command)
 
 def startPhoenix(phoenix_config):
@@ -68,6 +73,19 @@ def startPhoenix(phoenix_config):
     hadoop.Start()
     hbase.Start()
     phoenix.Start()
+
+def stopPhoenix(phoenix_config):
+    # this starts hadoop, hbase, and then the phoenix query server
+    # given a phoenix configuration object
+    hadoop_dir = phoenix_config.properties['Hadoop'][0]
+    hbase_dir = phoenix_config.properties['HBase'][0]
+    phoenix_dir = phoenix_config.properties['Phoenix'][0]
+    hadoop = Hadoop(hadoop_dir)
+    hbase = HBase(hbase_dir)
+    phoenix = Phoenix(phoenix_dir)
+    phoenix.Stop()
+    hbase.Stop()
+    hadoop.Stop()
 
 class Zookeeper:
     # this class will hold all we want for acting upon, starting, and stopping
