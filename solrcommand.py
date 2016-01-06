@@ -36,7 +36,7 @@ class CommandException(Exception):
 
 def startKeepers(system_config, keeper_config):
     # this will start keepers using the configuration objects input
-    # first a simple check
+    # first a simple check to make sure our properties are not None
     for key in system_config.properties:
         if not system_config.properties[key]:
             raise CommandException('%s in system configuration has value None' % key)
@@ -47,13 +47,14 @@ def startKeepers(system_config, keeper_config):
     # go on blind faith... :P
     zookeeper_dir = system_config.properties['Zookeeper']
     keeper_configs = keeper_config.properties['Zookeeper']
+    # we have to run through the stuff for each zookeeper we added in the config
     for config in keeper_configs:
-        keeper = Zookeeper(config, zookeeper_dir)
+        keeper = Zookeeper(config, zookeeper_dir)   # create a zookeeper handler object
         keeper.Start()
 
 def stopKeepers(system_config, keeper_config):
     # this will start keepers using the configuration objects input
-    # first a simple check
+    # first a simple check to make sure our properties are not None
     for key in system_config.properties:
         if not system_config.properties[key]:
             raise CommandException('%s in system configuration has value None' % key)
@@ -64,6 +65,7 @@ def stopKeepers(system_config, keeper_config):
     # go on blind faith... :P
     zookeeper_dir = system_config.properties['Zookeeper']
     keeper_configs = keeper_config.properties['Zookeeper']
+    # we have to run through the stuff for each zookeeper we added in the config
     for config in keeper_configs:
-        keeper = Zookeeper(config, zookeeper_dir)
+        keeper = Zookeeper(config, zookeeper_dir) # create a zookeeper handler object
         keeper.Stop()
