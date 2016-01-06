@@ -7,6 +7,68 @@ start, stop, and modify keepers and solr
 
 import os
 
+def printImportant(string):
+    string = '\033[93m' + string + '\033[0m'
+    print(string)
+
+class Hadoop:
+    def __init__(self, hadoop_dir):
+        self.hadoop_dir = hadoop_dir
+
+    def Start(self):
+        command1 = '%s/sbin/start-dfs.sh' % self.hadoop_dir
+        command2 = '%s/sbin/start-yarn.sh' % self.hadoop_dir
+        printImportant('Using commands to start:')
+        printImportant(command1)
+        os.system(command1)
+        printImportant(command2)
+        os.system(command2)
+
+    def Stop(self):
+        command1 = '%s/sbin/stop-yarn.sh' % self.hadoop_dir
+        command2 = '%s/sbin/stop-dfs.sh' % self.hadoop_dir
+        printImportant('Using commands to start:')
+        printImportant(command1)
+        os.system(command1)
+        printImportant(command2)
+        os.system(command2)
+
+class HBase:
+    def __init__(self, hbase_dir):
+        self.hbase_dir = hbase_dir
+
+    def Start(self):
+        command = '%s/bin/start-hbase.sh' % self.hbase_dir
+        printImportant('Starting with command: %s' % command)
+        os.system(command)
+
+    def Stop(self):
+        command = '%s/bin/stop-hbase.sh' % self.hbase_dir
+        printImportant('Stopping with command: %s' % command)
+        os.system(command)
+
+class Phoenix:
+    def __init__(self, ph_dir):
+        self.ph_dir = ph_dir
+
+    def Start(self):
+        command = '%s/bin/queryserver.py' % self.ph_dir
+        printImportant('Starting query server with command: %s' % command)
+        os.system(command)
+
+def startPhoenix(phoenix_config):
+    # this starts hadoop, hbase, and then the phoenix query server
+    # given a phoenix configuration object
+    hadoop_dir = phoenix_config.properties['Hadoop'][0]
+    hbase_dir = phoenix_config.properties['HBase'][0]
+    phoenix_dir = phoenix_config.properties['Phoenix'][0]
+    hadoop = Hadoop(hadoop_dir)
+    hbase = HBase(hbase_dir)
+    phoenix = Phoenix(phoenix_dir)
+    hadoop.Start()
+    hbase.Start()
+    phoenix.Start()
+
 class Zookeeper:
     # this class will hold all we want for acting upon, starting, and stopping
     # a zookeeper from python
@@ -18,13 +80,13 @@ class Zookeeper:
     def Start(self):
         # here we just start up the zookeeper with its config
         command = '%s/bin/zkServer.sh start %s' % (self.zk_dir, self.config)
-        print('Starting with: %s' % command)
+        printImportant('Starting with: %s' % command)
         os.system(command)
 
     def Stop(self):
         # and here we stop the zookeeper
         command = '%s/bin/zkServer.sh stop %s' % (self.zk_dir, self.config)
-        print('Stopping with: %s' % command)
+        printImportant('Stopping with: %s' % command)
         os.system(command)
 
 

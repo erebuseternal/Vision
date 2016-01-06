@@ -91,3 +91,9 @@ class SolrConfiguration(Configuration):
     def Initiate(self):
         self.properties['ZookeeperAddresses'] = None
         self.properties['Solr'] = None
+
+class PhoenixConfiguration(Configuration):
+    def Initiate(self):
+        self.properties['Hadoop'] = None
+        self.properties['HBase'] = None
+        self.properties['Phoenix'] = None
