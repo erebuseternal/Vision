@@ -53,7 +53,7 @@ class XMLExtractor:
 
     """
     Now we know that there are more tags than just the ones mentioned above.
-    For example xml starts with <? xml version... ?>. Therefore we are going
+    For example xml starts with <?xml version... ?>. Therefore we are going
     to want to watch for special characters and strings at the beginnings of tags.
     Thus I have put the special dictionary above. The dictionary's keys are the
     special strings and the second is a function defined herein that plays with
@@ -71,9 +71,15 @@ class XMLExtractor:
         # called on initiation
         # the extractor should take the match object from the regular expression
         # as its argument (additional ones can be supplied as in our other code)
-        self.special['!'] = [self.handleComment]
+        self.special['!--'] = [self.doNothing]
+        """
+        NOTE COMMENTS CANNOT HAVE TAGS INSIDE OF THEM! YOU HAVE TO STRIP SUCH
+        TAGS FIRST!!!!
+        """
+        self.special['?xml'] = [self.doNothing]
 
-    def handleComment(self, tag):
+
+    def doNothing(self, tag):
         pass
 
     """
@@ -119,50 +125,64 @@ class XMLExtractor:
         names = []
         previous_group1_content = True # for correct behavior
         previous_tag_end = 0
+        previous_tag_complete = False
         for match in re.finditer(self.tag_expression, contents):
             if match.group(2) in self.special:
-                extract(match.group(2)) # extract
+                print match.group(0)
+                self.extract(match.group(2)) # extract
                 continue
             content_between_tags = contents[previous_tag_end: match.start()]
             if not match.group(1):
-                if previous_group1_content == False:
+                for i in range(0, 4):
+                    print match.group(i)
+                if previous_group1_content == False and not previous_tag_complete:
                     # here we need to finish the last node as a parent
                     self.document.AddContent(content_between_tags.decode('utf-8'))
                     self.document.FinishNode(True)
                 # now we handle the current node
                 name = match.group(2)
                 names.append(name)
+                print name
                 if self.document.current_parent:
                     self.document.CreateChild(name)
+                    print 'child created'
                 else:
                     self.document.CreateNode(name)
+                    print 'normal node created'
                 # now we need to get the attributes
                 if match.group(3):
                     self.document.AddAttributes(**self.grabAttributes(match.group(3)))
                 # the following handles complete tags
+                previous_tag_complete = False
                 if match.group(4) == '/':
+                    print 'complete tag found'
+                    previous_tag_complete = True
                     self.document.FinishNode()
                     names = names[:-1] # remove the name we just added as it is finished
                 previous_group1_content = False # set for the next round
                 previous_tag_end = match.end()
             elif match.group(1) == '/':
+                for i in range(0, 4):
+                    print match.group(i)
                 if match.group(2) != names[-1]:
                     # in this case we have a serious problem
                     print('Problem with structured syntax with tag: ' + match.group(0))
                     return
                 # now we can just check to see if we are jumping up a parent.
-                if previous_group1_content == True:
+                if previous_group1_content == True or previous_tag_complete:
                     # now we know we are finishing off a parent (which means the
                     # node has been finished but we need to finish children)
                     self.document.FinishChildren()
-                elif previous_group1_content == False:
+                elif previous_group1_content == False and not previous_tag_complete:
                     # we first need to add the content before we finish
+                    print 'Im here!'
                     content_between_tags = contents[previous_tag_end: match.start()]
                     self.document.AddContent(content_between_tags.decode('utf-8'))
                     self.document.FinishNode()
                 names = names[:-1] # we should remove this name now
                 previous_group1_content = True
                 previous_tag_end = match.end()
+                previous_tag_complete = False
 
 
 

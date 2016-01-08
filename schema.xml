@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- This is a super simple schema that I will build on as I learn all of this
+Solr stuff. As of today: Dec. 15 2015, I will simply have a text_general
+fieldType and then the Title, InfoBox, and Introduction of my documents will be
+fields with the general_text type. Finally, the key will be the title. -->
+
+<schema name="SimpleScraper" version="1.5">
+  <!-- Borrowed from example schema -->
+  <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100">
+    <analyzer type="index">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt" />
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt" />
+      <filter class="solr.SynonymFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+  </fieldType>
+
+  <!-- the fields gathered by SimpleScraper -->
+  <field name="title" type="text_general" indexed="true" stored="true"/>
+  <field name="InfoBox" type="text_general" indexed="true" stored="true"/>
+  <field name="Introduction" type="text_general" indexed="true" stored="true"/>
+
+  <!-- now we set the key -->
+  <uniqueKey>title</uniqueKey>
+
+  <!-- this has to be added for the update log to work. I added the default value -->
+  <field name="_version_" type="long" indexed="true" stored="true" default="1"/>
+  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
+
+
+
+</schema>
