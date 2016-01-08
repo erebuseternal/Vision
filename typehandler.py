@@ -123,7 +123,7 @@ class Type(Enum):
         else:
             return keep_value
 
-def getTypeEnum(self, string):
+def getTypeEnum(string):
     # so this is going to take a string name, and convert it to
     # the enum
     if string == 'Bool':
@@ -134,7 +134,7 @@ def getTypeEnum(self, string):
         return Type.Str
     elif string == 'Text':
         return Type.Text
-    elif string == 'TrieDouble'
+    elif string == 'TrieDouble':
         return Type.TrieDouble
     elif string == 'TrieInt':
         return Type.TrieInt
@@ -165,10 +165,10 @@ class SolrSchemaIngestor:
     def InputFile(self, file_name):
         self.extractor.InputFile(file_name)
 
-    def Extract(self):
+    def CreateDocument(self):
         # we will both extract the document here and set it to be the class'
         # document
-        self.extractor.Extract()
+        self.extractor.CreateDocument()
         self.document = self.extractor.document
 
     def Process(self):
@@ -218,7 +218,7 @@ class SolrSchemaIngestor:
         # uses a regular expression to catch the name from a string like
         # solr.TextField or "solr.TextField"
         match = re.search(self.fieldTypeExpression, class_attr)
-        return match(1) # return the group holding the name we are looking for
+        return match.group(1) # return the group holding the name we are looking for
 
     """
     Now that we can discover the field types we want to be able to link the

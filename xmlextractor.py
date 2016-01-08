@@ -128,13 +128,10 @@ class XMLExtractor:
         previous_tag_complete = False
         for match in re.finditer(self.tag_expression, contents):
             if match.group(2) in self.special:
-                print match.group(0)
                 self.extract(match.group(2)) # extract
                 continue
             content_between_tags = contents[previous_tag_end: match.start()]
             if not match.group(1):
-                for i in range(0, 4):
-                    print match.group(i)
                 if previous_group1_content == False and not previous_tag_complete:
                     # here we need to finish the last node as a parent
                     self.document.AddContent(content_between_tags.decode('utf-8'))
@@ -142,28 +139,22 @@ class XMLExtractor:
                 # now we handle the current node
                 name = match.group(2)
                 names.append(name)
-                print name
                 if self.document.current_parent:
                     self.document.CreateChild(name)
-                    print 'child created'
                 else:
                     self.document.CreateNode(name)
-                    print 'normal node created'
                 # now we need to get the attributes
                 if match.group(3):
                     self.document.AddAttributes(**self.grabAttributes(match.group(3)))
                 # the following handles complete tags
                 previous_tag_complete = False
                 if match.group(4) == '/':
-                    print 'complete tag found'
                     previous_tag_complete = True
                     self.document.FinishNode()
                     names = names[:-1] # remove the name we just added as it is finished
                 previous_group1_content = False # set for the next round
                 previous_tag_end = match.end()
             elif match.group(1) == '/':
-                for i in range(0, 4):
-                    print match.group(i)
                 if match.group(2) != names[-1]:
                     # in this case we have a serious problem
                     print('Problem with structured syntax with tag: ' + match.group(0))
@@ -175,7 +166,6 @@ class XMLExtractor:
                     self.document.FinishChildren()
                 elif previous_group1_content == False and not previous_tag_complete:
                     # we first need to add the content before we finish
-                    print 'Im here!'
                     content_between_tags = contents[previous_tag_end: match.start()]
                     self.document.AddContent(content_between_tags.decode('utf-8'))
                     self.document.FinishNode()
