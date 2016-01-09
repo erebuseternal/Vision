@@ -1,9 +1,3 @@
-from typehandler import SolrSchemaIngestor
+from starphoenix import GenerateCreateTableStatements
 
-si = SolrSchemaIngestor()
-si.InputFile('schema.xml')
-si.CreateDocument()
-si.Process()
-print(si.fieldTypes)
-print(si.fields)
-print(si.key)
+print GenerateCreateTableStatements('first_table', 'schema.xml')

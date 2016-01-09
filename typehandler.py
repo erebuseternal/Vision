@@ -8,8 +8,6 @@ does the translating to phoenix for us. This is what I hope to
 write herein.
 """
 
-from enum import Enum
-
 """
 First thing we are going to want is an enum that contains
 the various types we expect to use in Solr. This will be
@@ -82,18 +80,43 @@ function to translate either forwards or backwards between the solr
 and phoenix types attached to the Enum
 """
 
-class Type(Enum):
-    Bool = 'TINYINT'
-    DateRange = 'DATE'
-    Str = 'VARCHAR'
-    Text = 'VARCHAR ARRAY'
-    TrieDouble = 'DOUBLE'
-    TrieInt = 'INTEGER'
-    TrieLong = 'BIGINT'
-    TrieFloat = 'FLOAT'
+class Type:
+
+    # this is how I'm forcing this to work like an Enum is supposed to
+    def __getattr__(self, attr):
+        self.name = attr
+        if attr == 'Bool':
+            self.value = 'TINYINT'
+        if attr == 'DateRange':
+            self.value = 'DATE'
+        if attr == 'Str':
+            self.value = 'VARCHAR'
+        if attr == 'Text':
+            self.value = 'VARCHAR ARRAY'
+        if attr == 'TrieDouble':
+            self.value = 'DOUBLE'
+        if attr == 'TrieInt':
+            self.value = 'INTEGER'
+        if attr == 'TrieLong':
+            self.value = 'BIGINT'
+        if attr == 'TrieFloat':
+            self.value = 'FLOAT'
+        return self # this is so that I can go t=Type() t.Text and get something
+
+    def __eq__(self, other):
+        if self.name == other.name:
+            return True
+        else:
+            return False
+
+    def __repr__(self):
+        if self.name:
+            return 'Type: ' + self.name
+        else:
+            return 'Type: None'
+
 
     def __init__(self):
-        Enum.__init__(self)
         self.forward_translators = {}
         self.backward_translators = {}
         # now we set the translators :)
@@ -127,24 +150,24 @@ def getTypeEnum(string):
     # so this is going to take a string name, and convert it to
     # the enum
     if string == 'Bool':
-        return Type.Bool
+        return Type().Bool
     elif string == 'DateRange':
-        return Type.DateRange
+        return Type().DateRange
     elif string == 'Str':
-        return Type.Str
+        return Type().Str
     elif string == 'Text':
-        return Type.Text
+        return Type().Text
     elif string == 'TrieDouble':
-        return Type.TrieDouble
+        return Type().TrieDouble
     elif string == 'TrieInt':
-        return Type.TrieInt
+        return Type().TrieInt
     elif string == 'TrieLong':
-        return Type.TrieLong
+        return Type().TrieLong
     elif string == 'TrieFloat':
-        return Type.TrieFloat
+        return Type().TrieFloat
 
 """
-Next we are going to have some code here to read in schema files and turn them
+Next we are going to have some code here to read in schema files and help turn them
 into CREATE TABLE statements!!!
 """
 

@@ -21,7 +21,7 @@ fields with the general_text type. Finally, the key will be the title. -->
   </fieldType>
 
   <!-- the fields gathered by SimpleScraper -->
-  <field name="title" type="text_general" indexed="true" stored="true"/>
+  <field name="title" type="string" indexed="true" stored="true"/>
   <field name="InfoBox" type="text_general" indexed="true" stored="true"/>
   <field name="Introduction" type="text_general" indexed="true" stored="true"/>
 
@@ -31,7 +31,7 @@ fields with the general_text type. Finally, the key will be the title. -->
   <!-- this has to be added for the update log to work. I added the default value -->
   <field name="_version_" type="long" indexed="true" stored="true" default="1"/>
   <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
-
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
 
 
 </schema>
