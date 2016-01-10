@@ -1,0 +1,29 @@
+Okay so we have a schema and we that schema to build itself into an
+HTML page. The way we can do this is to essentially mark the place
+where specific fields are going to be input. I think I will do this
+in the following way:
+
+  Given a schema file we include a meta-info tag that determines a name
+  that will be used in queries and the like (it is essentially an
+  identifier of the table to be queried where the field names are encompassed
+  in the schema that defines that table(s))
+
+  Then we shall mark a where a field value must be put with |{field_name}
+  Then we shall have an application which replaces these field names with
+  some values that will have been grabbed based off of other information
+  that has come through some client connection. (note we need to make sure
+  the pipe can be escaped with a \)
+
+  So I am of course going to use the wiki stuff for a start :)
+
+  Note that we may want to preprocess the data after it comes through
+  a query to add some html or the like to it.
+
+  ***Okay next step is to use the field extractor to get the fields from a document
+  and then apply a processor to each field, and then CREATE AN OBJECT THAT CAN
+  HANDLE KNOWING WHERE THE FIELDS ARE IN THE DOCUMENT AND QUICKLY DO INSERTS.
+  SO A DICTIONARY OF KEYS AND VALUES IS GIVEN AND SIMPLE METHODS ARE CALLED TO
+  RUN A LOOP TO ADD THE FIELDS: have the object record field names and positions
+  and lengths in a dictionary. Then use this information to create a list that
+  then allows you to run backwards, using the process information to fill things
+  in. 
