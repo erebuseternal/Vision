@@ -194,11 +194,28 @@ class ZookeeperClient:
         printImportant('Uploading configset with command: %s' % command)
         os.system(command)
 
-def uploadConfigsets(system_config, configset_config):
+def uploadConfigset(system_config, configset_config):
     solr_dir = system_config.properties['Solr'][0]
     zookeeper_address = configset_config.properties['Zookeeper'][0]
     zookeeper_client = ZookeeperClient(zookeeper_address, solr_dir)
     configset_dir = configset_config.properties['Directory'][0]
-    names = configset_config.properties['Name']
-    for name in names:
-        zookeeper_client.UploadConfigset(configset_dir, name)
+    name = configset_config.properties['Name'][0]
+    zookeeper_client.UploadConfigset(configset_dir, name)
+
+class SolrAdmin:
+    def __init__(self, solr_address):
+        self.solr_address = solr_address
+
+    def CreateCollection(self, name, numshards, replicationfactor, configname):
+        command = 'curl http://%s/solr/admin/collections?action=CREATE&name=%s&numShards=%s&replicationFactor=%s' % (self.solr_address, name, numshards, replicationfactor)
+        printImportant('Creating collection with command: %s' % command)
+        os.system(command)
+
+def createCollection(collection_config):
+    solr_address = collection_config.properties['SolrAddress'][0]
+    name = collection_config.properties['Name'][0]
+    numshards = collection_config.properties['NumShards'][0]
+    replicationfactor = collection_config.properties['ReplicationFactor'][0]
+    configname = collection_config.properties['ConfigName'][0]
+    solradmin = SolrAdmin(solr_address)
+    solradmin.CreateCollection(name, numshards, replicationfactor, configname)

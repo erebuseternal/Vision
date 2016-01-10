@@ -18,4 +18,4 @@ configset_config.UploadConfiguration(sys.argv[2])
 
 # next we must start everything up using these configurations
 # we start with the zookeepers of course
-uploadConfigsets(system_config, configset_config)
+uploadConfigset(system_config, configset_config)

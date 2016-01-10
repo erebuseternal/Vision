@@ -1,0 +1,6 @@
+# solr collection configuration file. One file per collection
+Name wiki_collection
+NumShards 2
+ReplicationFactor 2
+ConfigName new_configs
+SolrAddress localhost:8983

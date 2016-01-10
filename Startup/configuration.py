@@ -103,3 +103,11 @@ class ConfigsetConfiguration(Configuration):
         self.properties['Zookeeper'] = None
         self.properties['Name'] = None
         self.properties['Directory'] = None
+
+class CollectionConfiguration(Configuration):
+    def Initiate(self):
+        self.properties['Name'] = None
+        self.properties['NumShards'] = 1
+        self.properties['ReplicationFactor'] = 1
+        self.properties['ConfigName'] = None
+        self.properties['SolrAddress'] = None
