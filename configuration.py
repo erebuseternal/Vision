@@ -97,3 +97,9 @@ class PhoenixConfiguration(Configuration):
         self.properties['Hadoop'] = None
         self.properties['HBase'] = None
         self.properties['Phoenix'] = None
+
+class ConfigsetConfiguration(Configuration):
+    def Initiate(self):
+        self.properties['Zookeeper'] = None
+        self.properties['Name'] = None
+        self.properties['Directory'] = None

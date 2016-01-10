@@ -1,0 +1,5 @@
+# this is to let us upload a configuration set to Solr
+Zookeeper localhost:2181
+Directory /var/STAR/Solr/cloudplay/configsets
+Name basic_configs
+Name new_configs

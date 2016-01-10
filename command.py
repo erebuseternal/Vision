@@ -183,3 +183,22 @@ def stopSolrNodes(system_config):
     command = '%s/bin/solr stop -all' % solr_dir
     printImportant('Stopping with command: %s' % command)
     os.system(command)
+
+class ZookeeperClient:
+    def __init__(self, zookeeper_address, solr_dir):
+        self.zookeeper_address = zookeeper_address
+        self.solr_dir = solr_dir
+
+    def UploadConfigset(self, configset_dir, name):
+        command = '%s/server/scripts/cloud-scripts/zkcli.sh -zkhost %s -cmd upconfig -confdir %s -confname %s' % (self.solr_dir, self.zookeeper_address, configset_dir, name)
+        printImportant('Uploading configset with command: %s' % command)
+        os.system(command)
+
+def uploadConfigsets(system_config, configset_config):
+    solr_dir = system_config.properties['Solr'][0]
+    zookeeper_address = configset_config.properties['Zookeeper'][0]
+    zookeeper_client = ZookeeperClient(zookeeper_address, solr_dir)
+    configset_dir = configset_config.properties['Directory'][0]
+    names = configset_config.properties['Name']
+    for name in names:
+        zookeeper_client.UploadConfigset(configset_dir, name)
