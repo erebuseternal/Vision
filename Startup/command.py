@@ -207,7 +207,8 @@ class SolrAdmin:
         self.solr_address = solr_address
 
     def CreateCollection(self, name, numshards, replicationfactor, configname):
-        command = 'curl http://%s/solr/admin/collections?action=CREATE&name=%s&numShards=%s&replicationFactor=%s' % (self.solr_address, name, numshards, replicationfactor)
+        # have to escape the ampersands
+        command = 'curl http://%s/solr/admin/collections?action=CREATE\&name=%s\&numShards=%s\&replicationFactor=%s\&collection.configName=%s' % (self.solr_address, name, numshards, replicationfactor, configname)
         printImportant('Creating collection with command: %s' % command)
         os.system(command)
 

@@ -1,0 +1,7 @@
+1. When uploading through the zookeeper client for Solr, the directory that
+you specify must contain at the top level the schema and solr.xml and the like
+that is the actual meat of the configset. The name that you specify is just
+what you want solr to call it. It has absolutely nothing to do with what you've
+named anything else.
+
+2. Python does not like ampersands in strings
