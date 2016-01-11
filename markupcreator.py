@@ -59,7 +59,7 @@ class StructuredDocument:
     Therefore you must work depth first in creating these structured pages
     """
 
-    def __init__(self, directory):
+    def __init__(self, directory=''):
         self.directory = directory
         self.nodes = []
         self.current_node = None
