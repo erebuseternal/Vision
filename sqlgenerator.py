@@ -24,14 +24,18 @@ class SchemaException(Exception):
 
 from typehandler import *
 
-def GenerateCreateTableStatements(table_name, schema_file, directory=''):
+def GenerateSchema(schema_file, directory=''):
+    # returns a schema_ingestor object
     # first we create a SolrSchemaIngestor of course
     schema_ingestor = SolrSchemaIngestor(directory)
     # next we ingest the file
     schema_ingestor.InputFile(schema_file)
     schema_ingestor.CreateDocument()
     schema_ingestor.Process()
-    # next we get the fields
+    return schema_ingestor
+
+def GenerateCreateTableStatements(table_name, schema_ingestor):
+    # first we get the fields
     fields = schema_ingestor.fields
     # next the key
     schema_key = schema_ingestor.key
@@ -72,3 +76,50 @@ def GenerateCreateTableStatements(table_name, schema_file, directory=''):
         statements[key] = 'CREATE TABLE ' + key + ' (' + schema_key + ' ' + fields[schema_key].value + ' PRIMARY KEY, position INTEGER, text VARCHAR)'
     # and now we can return the statements
     return statements
+
+"""
+We want to be able to take what would normally be used to index solr and
+generate upsert statements from it. This is what the next function is going to
+do.
+
+But first we are going to create a class which takes one of those xml files
+we would normally upload to solr, and instead parses them into several field
+extractors.
+"""
+
+from xmlextractor import XMLExtractor
+from markupcreater import StructuredDocument
+from fieldextractor import FieldExtractor
+
+class DocumentExtractor:
+
+    def __init__(self, directory=''):
+        self.xml_extractor = XMLExtractor(directory)
+
+    def InputFile(self, file):
+        self.xml_extractor.InputFile(file)
+
+    def splitDocuments(self):
+        # first we create the document
+        self.documents = []
+        self.xml_extractor.CreateDocument()
+        for node in self.xml_extractor.document.nodes:
+            if node.name == 'add':
+                for child in node.children:
+                    structured_doc = StructuredDocument()
+                    structured_doc.nodes.append(child)
+                    self.document.append(structured_doc) # appending all doc nodes
+
+    def createFieldExtractors(self):
+        # this will go through self.documents
+        self.extractors = []
+        for document in self.documents:
+            field_extractor = FieldExtractor()
+            field_extractor.ExtractFields(document)
+            self.extractors.append(field_extractor)
+
+
+def GenerateUpsertStatements(self, schema_ingestor, document_extractor):
+    """
+    So what the schema ingester is going to allow us to do is note how
+    to handle each of the fields. add_docs_file is
