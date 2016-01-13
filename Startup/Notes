@@ -5,3 +5,8 @@ what you want solr to call it. It has absolutely nothing to do with what you've
 named anything else.
 
 2. Python does not like ampersands in strings
+
+3. When starting zookeeper for the first time after cloning you will want to go into the
+data directories for each zookeeper and put in a file called myid with the id of the zookeeper as the only text. look to the solr manual
+
+4. before hadoop will work properly, you need to start ssh with service sshd start

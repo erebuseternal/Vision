@@ -1,4 +1,4 @@
 # this is the configuration file for phoenix
-Hadoop /root/Downloads/hadoop
-HBase /root/Downloads/hbase
-Phoenix /root/Downloads/phoenix
+Hadoop /root/Hellcat/hadoop
+HBase /root/Hellcat/hbase
+Phoenix /root/Hellcat/phoenix

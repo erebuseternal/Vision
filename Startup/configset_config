@@ -1,4 +1,4 @@
 # this is to let us upload a configuration set to Solr
 Zookeeper localhost:2181
-Directory /var/STAR/Solr/cloudplay/configsets/new_configs/conf #directly within this directory should be the schema.xml and the like no folders you have to get through to get to that stuff!!!
+Directory /root/Hellcat/Solr/cloudplay/configsets/new_configs/conf #directly within this directory should be the schema.xml and the like no folders you have to get through to get to that stuff!!!
 Name new_configs  #this is the name put in solr has NOTHING to do with the actual folder
