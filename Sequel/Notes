@@ -1,0 +1,31 @@
+So I realized that I have been thinking about this all wrong. I have been
+trying to create an SQL parser so that I can take SQL statements and turn
+them into objects, manipulate the objects and then turn them back to SQL
+statements. But due to the fact that SQL statements can com in a variety of
+forms with various patterns and capitalizations and the like, parsing them
+requires some nasty (although not difficult) code.
+
+But here's the thing. An SQL statement, rather the string that represents the
+SQL statement, is just a way of capturing a more abstract idea or object that
+the user wishes to pass into some kind of program. We use the strings because
+that is what SQL speaks. But, when conversing within my own programs, there is
+no need to use a string! In fact the string is incredibly inconvenient set
+beside an actual python object. One has to dig out the structure implied through
+the language of the thing rather than just literally grabbing the structure
+directly placed through the structure of the object itself.
+
+And here's the real kicker. The only SQL statements I have to work with are
+declarative, I am telling SQL what to do. Built in cursors translate that back
+into python objects. So the language transform only goes one way. I only need
+to speak SQL, I don't need to listen to it! :D And everyone knows speaking is
+the easier deal.
+
+But no, instead I planned on communicating through SQL strings, just to turn
+them into objects and then back into strings once I was done. Silly me I should
+just cut out the middle man! So I will create SQL objects that contain all of
+the structure required built in as structure in the object. And then I will give
+each object the ability to speak SQL strings. And with that, I am all good :)
+
+Much Better!!!! :D
+
+January 13, 2016  
