@@ -173,3 +173,125 @@ class Create(Verbose):
 
     def SetTableName(self, name):
         self.table_name = name
+
+class Select(Verbose):
+    """
+    SELECT
+        * field names
+        * From
+            * table names
+        * Where
+            * conditional statements
+            * logical joins and groupings
+        * GroupBy
+            * field names
+        * Having
+            * conditional statements
+        * OrderBy
+            * field names with optional ASC, DSC
+    """
+
+    def __init__(self):
+        self.select_from_expression = re.compile('(?i)SELECT\s{1,}([\w\W][\w\W]*[^\s])\s{1,}FROM\s{1,}([\w\W][\w\W]*[^\s])')
+        # this re grabs a match 'SELECT <text> FROM <text>' insensitive of case
+        # the two texts are the two groups the match will have. The text is stripped of white space
+        self.where_expression = re.compile('(?i)\s(WHERE)\s')
+        self.having_expression = re.compile('(?i)\s(HAVING)\s')
+        self.groupby_expression = re.compile('(?i)\s(GROUPBY)\s')
+        self.orderby_expression = re.compile('(?i)\s(ORDERBY)\s')
+        self.from_expression = re.compile('(?i)\s(FROM)\s')
+        self.select_expression = re.compile('(?i)\s(SELECT)\s')
+        self.expressions = [self.where_expression, self.having_expression,
+            self.groupby_expression, self.orderby_expression, self.from_expression,
+            self.select_expression]
+        self.other_expressions = [self.where_expression, self.having_expression,
+            self.groupby_expression, self.orderby_expression]
+        self.other_expression_names = ['WHERE', 'HAVING', 'GROUPBY', 'ORDERBY']
+
+    def findCommandGroups(self, statement):
+        # this function will go through a statement and return a dictionary
+        # with commands as keys and the text following the command (and before
+        # the next if applicable) as the value
+
+        # this is the initialized we will be returning
+        command_dictionary = {'SELECT' : '', 'FROM' : '', 'WHERE' : '', 'HAVING' : '',
+            'GROUPBY' : '', 'ORDERBY' : ''}
+        match = re.search(self.select_from_expression, statement)
+        # check to make sure that we have a match
+        if not match:
+            raise Issue("statment is not a valid Select Statement, doesn't match SELECT <text> FROM <text>")
+        # our select text is in the match's first groups
+        select_text = match.group(1)
+        # now we check to make sure no commands are in select_text
+        for expression in self.expressions:
+            temp_match = re.search(expression)
+            if temp_match:
+                raise Issue('select command inputs have a sql command in them!')
+        # we are all good here
+        command_dictionary['SELECT'] = select_text
+        # next we need to handle the From expression
+        # first we get the text after the from
+        other_text = match.group(0)
+        # next we make sure there are not extra froms
+        if re.search(self.from_expression, other_text):
+            raise Issue('At least two from commands in your sql statement')
+        # now we go through and find the first instances of each other command
+        # if they exist and we find the starting index of the command
+        other_list = []
+        for i in range(0, len(self.other_expressions)):
+            temp_match = re.search(self.other_expressions[i], other_text)
+            if temp_match:
+                # okay the starting index is going to be the start of the first group
+                other_list.append((self.other_expression_names[i], temp_match.start(1)))
+        # now we will first go through and sort them out
+        other_list = self.sortOtherList(other_list)
+        # now we go ahead will go ahead and chop things up
+        # first we get the From text
+        from_text = other_text[:other_list[0][1]].strip()
+        for expression in self.expressions:
+            if re.search(expression, from_text):
+                raise Issue('command found in FROM input')
+        command_dictionary['FROM'] = from_text
+        # now we go and get the rest
+        for i in range(0, len(other_list)):
+            name = other_list[i][0]
+            start_index = other_list[i][1]
+            text = other_text[start_index + len(name):other_list[i+1] or len(other_text)]
+            text = text.strip()
+            for expression in self.expressions:
+                if re.search(expression, text):
+                    raise Issue('command found in %s input' % name)
+            command_dictionary[name] = text
+        # and we are done so we can now return the dictionary!
+        return command_dictionary
+
+    def sortOtherList(self, other_list):
+        # this sorts the other_list created in findCommandGroups. It sorts by ascending
+        # value of each elements object at the index 1
+        made_switch = True
+        while made_switch:
+            new_list = []
+            made_switch = False
+            for i in range(1, len(other_list)):
+                # so when we find an element if it has a smaller value
+                # then the previous element, we append it to new list
+                # if it doesn't then we set add the last element and set it
+                # as the new one
+                if other_list[i][1] < other_list[i-1][1]:
+                    new_list.append(other_list[i])
+                    made_switch = True
+                else:
+                    new_list.append(other_list[i-1])
+            other_list = new_list
+        return other_list
+
+    """
+    Now that we have isolated the groups and checked to make sure there are only
+    the commands (and number of commands) that we expect, we now need to extract
+    each of these pieces
+    """
+
+    def extractSelectCommand(self, select_text):
+        # select text should be the text following the select command (stripped)
+        # and before the next command (from) will be using regular expressions
+        # here as well.
