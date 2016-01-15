@@ -7,17 +7,25 @@ allows you to access them by name as if from a dictionary.
 """
 
 import copy
+from xmlextractor import XMLExtractor
 
 class FieldExtractor:
     """
-    This takes in a structured document and pulls out the fields
+    This takes in an xml document and pulls out the fields
     """
 
-    def __init__(self):
+    def __init__(self, directory=''):
         self.fields = {}
+        self.directory = directory
+        self.xml_extractor = XMLExtractor(directory)
 
-    def ExtractFields(self, structured_doc):
+    def InputFile(self, address):
+        self.xml_extractor.InputFile(address)
+
+    def ExtractFields(self):
         self.fields = {}
+        self.xml_extractor.CreateDocument()
+        structured_doc = self.xml_extractor.document
         for node in structured_doc.nodes:
             self.extract(node)
 
@@ -45,17 +53,6 @@ class FieldExtractor:
 The next function will go ahead and take a document (with solr syntax), extract
 it, extract the fields and then return those fields as a FieldExtractor
 """
-from xmlextractor import XMLExtractor
-
-def extractFields(self, file, directory=''):
-    # first we create the xml extractor
-    xml_ex = XMLExtractor(directory)
-    xml_ex.InputFile(file)
-    xml_ex.CreateDocument()
-    document = xml_ex.document
-    f_ex = FieldExtractor()
-    f_ex.ExtractFields(document)
-    return f_ex
 
 import re
 
@@ -74,9 +71,9 @@ class FieldTracker:
         self.expression = re.compile('\|\{([^\{\} ]*)\}')
         self.text = ''
 
-    def InputFile(self, file):
-        self.file = file
-        self.xml_extractor.InputFile(file)
+    def InputFile(self, address):
+        self.xml_extractor.InputFile(address)
+        self.file = address
 
     def Process(self):
         # first we get the table name
@@ -85,9 +82,9 @@ class FieldTracker:
 
     def getTableName(self):
         self.xml_extractor.CreateDocument()
-        for node in xml_extractor.document.nodes:
+        for node in self.xml_extractor.document.nodes:
             self.findNameTag(node)
-            if self.found_tag = True
+            if self.found_tag == True:
                 break
 
     def findNameTag(self, node):
@@ -96,13 +93,13 @@ class FieldTracker:
                 self.table_name = node.attributes['value'][1:-1]
                 self.found_tag = True
             for child in node.children:
-                if self.found_tag = True:
+                if self.found_tag == True:
                     break
                 self.findNameTag(child)
 
     def findFieldMarkers(self):
         # first we read the file
-        text = open(self.directory + self.file, 'r').read()
+        text = open(self.file, 'r').read()
         self.text = text
         prior = []
         # next we look for matches for fieldmarkers
@@ -117,21 +114,27 @@ class FieldTracker:
         # forwards to front so when we go through replacing markers with values we just
         # work right through the list from front to back without worrying about changing indices we need
         # to keep track of
-        for i in range(-1, -len(prior), -1):
-            self.fieldmarkers.append(prior[i])
+        print prior
+        for i in range(-1, -len(prior) - 1, -1):
+            print i
+            self.field_markers.append(prior[i])
+        print self.field_markers
 
 """
 The following function takes a FieldMarker (that has processed everything) and a FieldExtractor (which has processed
 things) and returns the newly made HTML
 """
 
-def joinData(field_extractor, field_marker):
+def joinData(field_extractor, field_tracker):
     # so we just loop through the field markers and make our replacements as we go
-    text = field_marker.text
-    for tup in field_marker.fieldmarkers:
+    text = field_tracker.text
+    for tup in field_tracker.field_markers:
         start = tup[0]
         end = tup[1]
         field = tup[2]
-        value = field_extractor[field]
-        text = text[0:start] + value + text[end + 1:]
+        value = field_extractor[field].content
+        text = text[0:start] + value + text[end:] # yes you would think it would be
+                # end + 1, but just end works :/ guessing match.end() returns
+                # the 'end' of the substring such that text[start:end] returns the
+                # match
     return text
