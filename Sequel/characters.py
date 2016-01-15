@@ -254,11 +254,11 @@ class QueryField:
 
     def __str__(self):
         if self.type == 'FUNCTION':
-            return '%s %s(%s)' % (self.name, self.content['function'], self.prepareField(self.content['argument'])
+            return '%s(%s) AS %s' % (self.content['function'], self.prepareField(self.content['argument'], self.name)
         elif self.type == 'VALUE':
-            return '%s %s' % (self.name, self.content)
+            return '%s AS %s' % (self.content, self.name)
         elif self.type == 'FIELD':
             if self.name == self.content:
                 return self.prepareField(self.content)
             else:
-                return '%s %s' % (self.name, self.prepareField(content))
+                return '%s AS %s' % (self.prepareField(content), self.name)
