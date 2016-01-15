@@ -81,6 +81,7 @@ class SchemaConstraint:
         return 'CONSTRAINT %s %s' % (self.name, self.constraint)
 
 class Create(Character):
+    table_name = None
     fields = []
     constraints = []
 
@@ -119,3 +120,145 @@ class Create(Character):
         statement = 'CREATE TABLE %s (%s)' % (self.table_name, schema_string)
         # and we are all done so we return this string
         return statement
+
+"""
+UPSERT
+    * table name
+    * given field order
+    * values
+
+So the way that we are going to do this is by keeping table_name and then
+the key value pairs of field -> value. This seems the most natural way of
+capturing the structure of an UPSERT.
+"""
+
+class Upsert(Character):
+    table_name = None
+    values = {} # this is the dictionary that is field -> value
+
+    def SetTableName(self, table_name):
+        self.table_name = table_name
+
+    def AddValue(self, field_name, value):
+        values[field_name] = value
+
+    def Speak(self):
+        # we need to put together the field list and the value list together
+        # we definitely want to do this at the same time, because the values
+        # need to come in the same order as the fields come
+        field_text = ''
+        value_text = ''
+        for field_name in self.values:
+            field_text = field_text + ' ' + field_name + ','
+            value_text = '%s %s,' % (value_text, values[field_name])
+        # now we need to clip the first space and last comma from each of these
+        # and then we are ready to go!
+        field_text = field_text[1:-1]
+        value_text = value_text[1:-1]
+        # ready to go! :D
+        statement = 'UPSERT INTO %s(%s) VALUES (%s)' % (self.table_name, field_text, value_text)
+        return statement
+
+"""
+SELECT
+    * fields
+    * From
+        * table names
+    * Where
+        * conditional statements
+        * logical joins and groupings
+    * GroupBy
+        * field names
+    * Having
+        * conditional statements
+    * OrderBy
+        * field names with optional ASC, DSC
+
+Now each of these pieces can be a wee bit complicated so let's go through them
+carefully :)
+"""
+
+"""
+Fields
+
+first off they have a name. Then fields in the select statement can have a few
+'values':
+    * function
+    * expression
+    * constant value
+    * field name
+and they can have keywords like Distinct
+
+So we would like this kind of object:
+    * name
+    * keywords
+    * content - which is only one of the following
+        * value (i.e. constant)
+        * function
+            * function name
+            * field name (that goes in the function)
+        * field name
+
+I do not expect to use expressions at all. So I'm going to leave that out for now
+
+Finally, the value can have a table attached to it
+"""
+
+class QueryField:
+    name = None
+    content = None
+    type = None # the type of content
+    table = None    # the table from which we get the field specified
+                    # if there is one
+    keywords = []
+
+    def SetName(self, name):
+        self.name = name
+
+    def SetField(self, field_name, as_name=True):
+        # this sets the content as a field name. If as_name is true
+        # it also sets name to the field_name
+        self.content = field_name
+        self.type = 'FIELD'
+        if as_name:
+            self.name = field_name
+
+    def SetValue(self, value):
+        # this sets the content as a constant value
+        self.content = value
+        self.type = 'VALUE'
+
+    def SetFunction(self, function, argument):
+        # this sets the content as a function
+        self.content = {'function' : function, 'argument' : argument}
+        self.type = 'FUNCTION'
+
+    def SetTable(self, table):
+        self.table = table
+
+    def AddKeyword(self, keyword):
+        self.keywords.append(keyword)
+
+    def RemoveKeyword(self, keyword):
+        self.keywords.pop(keyword)
+
+    def prepareField(self):
+        # this puts everything around the field that's needed
+        if self.table:
+            product = '%s.%s' % (self.table, self.content)
+        else:
+            product = self.content
+        for keyword in self.keywords
+            product = '%s %s' % (keyword, product)
+        return product
+
+    def __str__(self):
+        if self.type == 'FUNCTION':
+            return '%s %s(%s)' % (self.name, self.content['function'], self.prepareField(self.content['argument'])
+        elif self.type == 'VALUE':
+            return '%s %s' % (self.name, self.content)
+        elif self.type == 'FIELD':
+            if self.name == self.content:
+                return self.prepareField(self.content)
+            else:
+                return '%s %s' % (self.name, self.prepareField(content))
