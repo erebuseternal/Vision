@@ -46,8 +46,8 @@ class FieldExtractor:
         return new_node
 
     def __getitem__(self, key):
-        # so that we can access the field nodes off of this object like accessing a dictionary
-        return self.fields[key]
+        # so that we can access the field node content off of this object like accessing a dictionary
+        return self.fields[key].content
 
 """
 The next function will go ahead and take a document (with solr syntax), extract
@@ -114,25 +114,24 @@ class FieldTracker:
         # forwards to front so when we go through replacing markers with values we just
         # work right through the list from front to back without worrying about changing indices we need
         # to keep track of
-        print prior
         for i in range(-1, -len(prior) - 1, -1):
             print i
             self.field_markers.append(prior[i])
-        print self.field_markers
 
 """
 The following function takes a FieldMarker (that has processed everything) and a FieldExtractor (which has processed
 things) and returns the newly made HTML
 """
 
-def joinData(field_extractor, field_tracker):
+def joinData(field_dictionary, field_tracker):
     # so we just loop through the field markers and make our replacements as we go
     text = field_tracker.text
     for tup in field_tracker.field_markers:
         start = tup[0]
         end = tup[1]
         field = tup[2]
-        value = field_extractor[field].content
+        value = field_dictionary[field] # just needs to act like a dictionary
+                                        # a field extractor works just fine here
         text = text[0:start] + value + text[end:] # yes you would think it would be
                 # end + 1, but just end works :/ guessing match.end() returns
                 # the 'end' of the substring such that text[start:end] returns the
