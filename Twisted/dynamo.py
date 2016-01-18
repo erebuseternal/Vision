@@ -13,7 +13,7 @@ an error message (saying bad message). call_METHOD should return a response
 object, and this response object is used to create the message that gets
 send back to the client.
 
-To register a resource use the AddResource method on the protocol
+To register a resource use the AddResource method on the protocol.
 """
 
 from twisted.protocols import basic
