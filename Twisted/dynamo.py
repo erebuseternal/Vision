@@ -1,25 +1,19 @@
 # Python File isaac.py
 
 """
-We need an HTTP server for the IdeaBazaar. First there is input, both
-through cookies and a url. This the gets parsed and entered into a inputhandler.
-Then the handler will do some 'magick' and then act as a dictionary with a set
-of fields as keys and the values as the values those fields have given the
-input data. Then we use the joinData function from fieldextractor to combine
-this with a dynamic HTML page attached to the resource. This final page is
-then returned to the user.
+The following is an HTTPServer Protocol. It works in the following way:
+It will receive a message and parse its lines into method, url, headers,
+body, etc. Then you will have registered resources with it. It finds the
+best match (and send an error if there isn't one) and then creates a
+request object containing all the request info (you can create a class
+that also has processing code which will be called before it gets passed
+to a call_GET or call_POST method) and passes it to call_GET or call_POST
+depending on the method found. If the method is neither get or post, it sends
+an error message (saying bad message). call_METHOD should return a response
+object, and this response object is used to create the message that gets
+send back to the client.
 
-The steps then are the following:
-    * grab two parts of the url:
-        * the part having to do with which page to choose
-        * the part having information to input to the handler
-    * grab the input from the cookie
-    * send all of this to the input handler and then call a Grab method on the
-        input handler
-    * then we join using joinData and a FieldMarker and the input handler
-    * finally we grab any cookie info from the handler that needs to be kept
-
-So how will we separate the url into its two pieces?
+To register a resource use the AddResource method on the protocol
 """
 
 from twisted.protocols import basic
@@ -222,3 +216,19 @@ class HTTPServer(basic.lineReceiver):
             self.sendLine('')
             self.transport.write(response.body)
         self.transport.loseConnection()
+
+class Resource:
+
+    def call_GET(self, request):
+        # must return a response with the appropriate headers and such
+        response = Response()
+        response.status = 200
+        response.message = 'OK'
+        return response
+
+    def call_POST(self, request):
+        # must return a response with the appropriate headers and such
+        response = Response()
+        response.status = 200
+        response.message = 'OK'
+        return response
