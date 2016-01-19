@@ -23,9 +23,9 @@ print(create_statement.Speak())
 printImportant('UPSERT STATEMENT')
 upsert_statement = Upsert()
 upsert_statement.SetTableName('my_table')
-upsert_statement.AddValue('id', 1)
-upsert_statement.AddValue('value', 'hello')
-upsert_statement.AddValue('name', 'world')
+upsert_statement.AddField('id', 1)
+upsert_statement.AddField('value', 'hello')
+upsert_statement.AddField('name', 'world')
 print(upsert_statement.Speak())
 
 # SELECT STATEMENT

@@ -130,19 +130,27 @@ UPSERT
     * values
 
 So the way that we are going to do this is by keeping table_name and then
-the key value pairs of field -> value. This seems the most natural way of
-capturing the structure of an UPSERT.
+then a list of upsert fields.
 """
+
+class UpsertField:
+
+    def __init__(self, name, type, value):
+        self.name = name
+        self.type = type
+        self.value = value
 
 class Upsert(Character):
     table_name = None
-    values = {} # this is the dictionary that is field -> value
+    fields = [] # this is the list of upsert fields
 
     def SetTableName(self, table_name):
         self.table_name = table_name
 
-    def AddValue(self, field_name, value):
-        self.values[field_name] = value
+    def AddField(self, field):
+        if not isinstance(field, UpsertField)
+            raise Issue("the field you tried to add isn't an instance of UpsertField")
+        self.fields.append(field)
 
     def Speak(self):
         # we need to put together the field list and the value list together
@@ -150,9 +158,9 @@ class Upsert(Character):
         # need to come in the same order as the fields come
         field_text = ''
         value_text = ''
-        for field_name in self.values:
-            field_text = field_text + ' ' + field_name + ','
-            value_text = '%s %s,' % (value_text, self.values[field_name])
+        for field in self.fields:
+            field_text = field_text + ' ' + field.name + ','
+            value_text = '%s %s,' % (value_text, field.value)
         # now we need to clip the first space and last comma from each of these
         # and then we are ready to go!
         field_text = field_text[1:-1]
