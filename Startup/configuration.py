@@ -111,3 +111,9 @@ class CollectionConfiguration(Configuration):
         self.properties['ReplicationFactor'] = 1
         self.properties['ConfigName'] = None
         self.properties['SolrAddress'] = None
+
+class IndexConfiguration(Configuration):
+    def Initiate(self):
+        self.properties['Collection'] = None
+        self.properties['DataDirectory'] = None
+        self.properties['SolrAddress'] = None

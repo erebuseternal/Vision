@@ -1,0 +1,3 @@
+Collection wikicollection
+DataDirectory /root/Vision/SolrData
+SolrAddress localhost:8983
