@@ -241,10 +241,11 @@ Finally, the value can have a table attached to it
 class QueryField:
     name = None
     content = None
-    type = None # the type of content
+    kind = None # the type of content
     table = None    # the table from which we get the field specified
                     # if there is one
     keywords = []
+    type = None
 
     def SetName(self, name):
         self.name = name
@@ -252,23 +253,26 @@ class QueryField:
     def RemoveName(self):
         self.name = None
 
-    def SetField(self, field_name, as_name=True):
+    def SetField(self, field_name, type, as_name=True):
         # this sets the content as a field name. If as_name is true
         # it also sets name to the field_name
         self.content = field_name
-        self.type = 'FIELD'
+        self.kind = 'FIELD'
+        self.type = type
         if as_name:
             self.name = field_name
 
-    def SetValue(self, value):
+    def SetValue(self, value, type='GenericType'):
         # this sets the content as a constant value
         self.content = value
-        self.type = 'VALUE'
+        self.kind = 'VALUE'
+        self.type = type  # just to allow queryfield converter to deal with this
 
-    def SetFunction(self, function, argument):
+    def SetFunction(self, function, argument, type):
         # this sets the content as a function
         self.content = {'function' : function, 'argument' : argument}
-        self.type = 'FUNCTION'
+        self.type = type
+        self.kind = 'FUNCTION'
 
     def SetTable(self, table):
         if isinstance(table, QueryTable):
@@ -296,18 +300,18 @@ class QueryField:
         return product
 
     def __str__(self):
-        if self.type == 'FUNCTION':
+        if self.kind == 'FUNCTION':
             if self.name:
                 return '%s(%s) AS %s' % (self.content['function'], self.prepareField(self.content['argument']), self.name)
             else:
                 return '%s(%s)' % (self.content['function'], self.prepareField(self.content['argument']))
-        elif self.type == 'VALUE':
+        elif self.kind == 'VALUE':
             if self.name:
                 return '%s AS %s' % (self.content, self.name)
             else:
                 return '%s' % self.content  # this is here to handle fields used
                                             # in conditions which don't need names
-        elif self.type == 'FIELD':
+        elif self.kind == 'FIELD':
             if self.name == self.content:
                 return self.prepareField(self.content)
             else:
