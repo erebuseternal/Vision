@@ -1,5 +1,7 @@
 # Python File characters.py (part of Sequel)
 
+from copy import *
+
 # for general problem handling
 class Issue(Exception):
     def __init__(self, problem):
@@ -115,7 +117,7 @@ class Create(Character):
         # now note that there will be an unneeded space at the beginning of
         # schema_string and a most unwanted comma at the end, so we will clip
         # those off now
-        scema_string = schema_string[1:-1]
+        schema_string = schema_string[1:-1]
         # now we have all the pieces so we can assemble them!
         statement = 'CREATE TABLE %s (%s)' % (self.table_name, schema_string)
         # and we are all done so we return this string
@@ -140,7 +142,7 @@ class Upsert(Character):
         self.table_name = table_name
 
     def AddValue(self, field_name, value):
-        values[field_name] = value
+        self.values[field_name] = value
 
     def Speak(self):
         # we need to put together the field list and the value list together
@@ -150,7 +152,7 @@ class Upsert(Character):
         value_text = ''
         for field_name in self.values:
             field_text = field_text + ' ' + field_name + ','
-            value_text = '%s %s,' % (value_text, values[field_name])
+            value_text = '%s %s,' % (value_text, self.values[field_name])
         # now we need to clip the first space and last comma from each of these
         # and then we are ready to go!
         field_text = field_text[1:-1]
@@ -158,6 +160,30 @@ class Upsert(Character):
         # ready to go! :D
         statement = 'UPSERT INTO %s(%s) VALUES (%s)' % (self.table_name, field_text, value_text)
         return statement
+
+"""
+Tables. Tables have two parts, the table name and then the table alias.
+So this will be pretty simple
+"""
+
+class QueryTable:
+    name = None
+    alias = None
+
+    def SetName(self, name):
+        self.name = name
+
+    def SetAlias(self, alias):
+        self.alias = alias
+
+    def RemoveAlias(self):
+        self.alias = None
+
+    def __str__(self):
+        if self.alias:
+            return '%s AS %s' % (self.name, self.alias)
+        else:
+            return self.name
 
 """
 SELECT
@@ -237,7 +263,7 @@ class QueryField:
         self.type = 'FUNCTION'
 
     def SetTable(self, table):
-        if isinstance(table, QueryTable)
+        if isinstance(table, QueryTable):
             self.table = table
         else:
             raise Issue('the table you attempted to enter is not an instance of QueryTable')
@@ -248,16 +274,16 @@ class QueryField:
     def RemoveKeyword(self, keyword):
         self.keywords.pop(keyword)
 
-    def prepareField(self):
+    def prepareField(self, content):
         # this puts everything around the field that's needed
         if self.table:
             if self.table.alias:
-                product = '%s.%s' % (self.content, self.table.alias)
+                product = '%s.%s' % (content, self.table.alias)
             else:
-                product = '%s.%s' % (self.content, self.table.name)
+                product = '%s.%s' % (content, self.table.name)
         else:
-            product = self.content
-        for keyword in self.keywords
+            product = content
+        for keyword in self.keywords:
             product = '%s %s' % (keyword, product)
         return product
 
@@ -278,33 +304,9 @@ class QueryField:
                 return self.prepareField(self.content)
             else:
                 if self.name:
-                    return '%s AS %s' % (self.prepareField(content), self.name)
+                    return '%s AS %s' % (self.prepareField(self.content), self.name)
                 else:
-                    return self.prepareField(content)
-
-"""
-Tables. Tables have two parts, the table name and then the table alias.
-So this will be pretty simple
-"""
-
-class QueryTable:
-    name = None
-    alias = None
-
-    def SetName(self, name):
-        self.name = name
-
-    def SetAlias(self, alias):
-        self.alias = alias
-
-    def RemoveAlias(self):
-        self.alias = None
-
-    def __str__(self):
-        if self.alias:
-            return '%s AS %s' % (self.name, self.alias)
-        else:
-            return self.name
+                    return self.prepareField(self.content)
 
 """
 For the where statement we have conditional statements. And we are also going
@@ -326,13 +328,14 @@ class QueryCondition:
     def AddOperator(self, operator):
         self.operator = operator
 
-    def AddOperator(self, operand1, operand2=None):
+    def AddOperand(self, operand1, operand2=None):
         if not isinstance(operand1, QueryField):
             raise Issue('first operand entered is not of type QueryField')
         # now we quickly remove the name of the operand1 (if it has one)
+        operand1 = deepcopy(operand1)
         operand1.RemoveName()
-        if operand2 == None
-            if addition_state == 1:
+        if operand2 == None:
+            if self.addition_state == 1:
                 self.first_operand = operand1
                 self.addition_state = 2
             else:
@@ -342,6 +345,7 @@ class QueryCondition:
             if not isinstance(operand2, QueryField):
                 raise Issue('second operand entered is not of type QueryField')
             # remove name from operand2
+            operand2 = deepcopy(operand2)
             operand2.RemoveName()
             self.first_operand = operand1
             self.second_operand = operand2
@@ -356,7 +360,7 @@ class QueryCondition:
         self.addition_state = 1
 
     def __str__(self):
-        return '%s %s %s' (self.first_operand, self.operator, self.second_operand)
+        return '%s %s %s' % (self.first_operand, self.operator, self.second_operand)
 
 """
 Finally, just to keep things pretty, we need to handle order by fields.
@@ -429,8 +433,8 @@ class Node:
     condition = None
 
     def SetCondition(self, condition):
-        if not isinstance(condition, QueryCondition):
-            raise Issue('entered condition is not an instance of QueryCondition')
+        if not isinstance(condition, QueryCondition) and condition:
+            raise Issue('entered condition is not an instance of QueryCondition and is not None')
         self.condition = condition
 
     def CreateChild(self, operator='AND'):  # note the default operator is AND
@@ -440,12 +444,12 @@ class Node:
         child.parent = self
         if len(self.children) > 0:
             self.children[-1].sibling = child
-            self.chilrend[-1].operator = operator
+            self.children[-1].operator = operator
         self.children.append(child)
         return child
 
     def CreateSibling(self, operator='AND'):
-        if self.parent
+        if self.parent:
             return self.parent.CreateChild(operator)
         else:
             sibling = Node()
@@ -479,7 +483,7 @@ class Node:
                 return '%s %s %s' % (self.condition, self.operator, next_string)
             else:
                 children_string = self.children[0].createString()
-                return '(%S) %s %s' % (children_string, self.operator, next_string)
+                return '(%s) %s %s' % (children_string, self.operator, next_string)
 
     def __str__(self):
         return self.createString()
@@ -493,6 +497,8 @@ class Select(Character):
     last_added_where_node = None
     having = None
     last_added_having_node = None
+    where_group_entry = False
+    having_group_entry = False
 
     def AddField(self, field):
         if not isinstance(field, QueryField):
@@ -523,13 +529,19 @@ class Select(Character):
             new_node = Node()
             new_node.SetCondition(condition)
             self.where = new_node
-            self.last_added_where_node = condition
+            self.last_added_where_node = new_node
         else:
             if self.last_added_where_node.condition:
                 # create a sibling for the last node
                 new_node = self.last_added_where_node.CreateSibling()
             else:   # this is the case where the last one created was a group
-                new_node = self.last_added_where_node.CreateChilde()
+                    # or we just exited a group
+                if self.where_group_entry:
+                    # just entered a group
+                    new_node = self.last_added_where_node.CreateChild()
+                else:
+                    # just exited
+                    new_node = self.last_added_where_node.CreateSibling()
             # set the nodes condition
             new_node.SetCondition(condition)
             # set the operator on the last condition
@@ -539,10 +551,12 @@ class Select(Character):
 
     def AddWhereGroup(self, operator='AND'):
         self.AddWhereCondition(None, operator)
+        self.where_group_entry = True
 
     def ExitWhereGroup(self):
         # all we have to do is go back up a level
         self.last_added_where_node = self.last_added_where_node.parent
+        self.where_group_entry = False
 
     def AddHavingCondition(self, condition, operator='AND'):
         # operator is only used once at least one condition is present in the where
@@ -551,13 +565,19 @@ class Select(Character):
             new_node = Node()
             new_node.SetCondition(condition)
             self.having = new_node
-            self.last_added_having_node = condition
+            self.last_added_having_node = new_node
         else:
             if self.last_added_having_node.condition:
                 # create a sibling for the last node
                 new_node = self.last_added_having_node.CreateSibling()
             else:   # this is the case where the last one created was a group
-                new_node = self.last_added_having_node.CreateChilde()
+                    # or we just exited a group
+                if self.having_group_entry:
+                    # just entered a group
+                    new_node = self.last_added_having_node.CreateChild()
+                else:
+                    # just exited
+                    new_node = self.last_added_having_node.CreateSibling()
             # set the nodes condition
             new_node.SetCondition(condition)
             # set the operator on the last condition
@@ -567,9 +587,11 @@ class Select(Character):
 
     def AddHavingGroup(self, operator='AND'):
         self.AddHavingCondition(None, operator)
+        self.having_group_entry = True
 
     def ExitHavingGroup(self):
         self.last_added_having_node = self.last_added_having_node.parent
+        self.having_group_entry = False
 
     def Speak(self):
         # first we start with the fields
@@ -592,7 +614,7 @@ class Select(Character):
         if len(self.groupby) > 0:
             groupby_text = '\nGROUPBY'
             for field in self.groupby:
-                grouby_text = '%s %s,' % (grouby_text, field)
+                groupby_text = '%s %s,' % (groupby_text, field)
             groupby_text = groupby_text[:-1]
         # next having
         having_text = ''
@@ -606,21 +628,20 @@ class Select(Character):
                 orderby_text = '%s %s,' % (orderby_text, field)
             orderby_text = orderby_text[:-1]
         # and now we put it all together
-        return select_text + from_text + where_text + grouby_text + having_text + orderby_text
+        return select_text + from_text + where_text + groupby_text + having_text + orderby_text
 
 """
 And now for delete
 """
 
 class Delete(Character):
-    table = None
+    table_name = None
     where = None
     last_added_where_node = None
+    where_group_entry = False
 
-    def SetTable(self, table):
-        if not isinstance(table, QueryTable):
-            raise Issue('entered table is not an instance of QueryTable')
-        self.table = table
+    def SetTableName(self, table_name):
+        self.table_name = table_name
 
     def AddWhereCondition(self, condition, operator='AND'):
         # operator is only used once at least one condition is present in the where
@@ -629,13 +650,19 @@ class Delete(Character):
             new_node = Node()
             new_node.SetCondition(condition)
             self.where = new_node
-            self.last_added_where_node = condition
+            self.last_added_where_node = new_node
         else:
             if self.last_added_where_node.condition:
                 # create a sibling for the last node
                 new_node = self.last_added_where_node.CreateSibling()
             else:   # this is the case where the last one created was a group
-                new_node = self.last_added_where_node.CreateChilde()
+                    # or we just exited a group
+                if self.where_group_entry:
+                    # just entered a group
+                    new_node = self.last_added_where_node.CreateChild()
+                else:
+                    # just exited
+                    new_node = self.last_added_where_node.CreateSibling()
             # set the nodes condition
             new_node.SetCondition(condition)
             # set the operator on the last condition
@@ -645,13 +672,15 @@ class Delete(Character):
 
     def AddWhereGroup(self, operator='AND'):
         self.AddWhereCondition(None, operator)
+        self.where_group_entry = True
 
     def ExitWhereGroup(self):
         # all we have to do is go back up a level
         self.last_added_where_node = self.last_added_where_node.parent
+        self.where_group_entry = False
 
     def Speak(self):
         if self.where:
-            return 'DELETE FROM %s WHERE %s' % (self.table, self.where)
+            return 'DELETE FROM %s WHERE %s' % (self.table_name, self.where)
         else:
-            return 'DELETE FROM %s' % self.table
+            return 'DELETE FROM %s' % self.table_name
