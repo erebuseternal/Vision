@@ -48,9 +48,9 @@ A CREATE TABLE SQL command is pretty simple. It has:
         * constraint
 """
 
-class SchemaField:
+class Field:
     """
-    This class represents a schema field
+    This class represents a field
     """
 
     def __init__(self, name, type, constraint=None):
@@ -67,7 +67,7 @@ class SchemaField:
         else:
             return '%s %s' % (self.name, self.type)
 
-class SchemaConstraint:
+class Constraint:
     """
     This class represents a schema constraint
     """
@@ -92,16 +92,16 @@ class Create(Character):
 
 
     def AddField(self, field):
-        if isinstance(field, SchemaField):
+        if isinstance(field, Field):
             self.fields.append(field)
         else:
-            raise Issue("the field you tried to add isn't an instance of SchemaField")
+            raise Issue("the field you tried to add isn't an instance of Field")
 
     def AddConstraint(self, constraint):
-        if isinstance(constraint, SchemaConstraint):
+        if isinstance(constraint, Constraint):
             self.constraints.append(constraint)
         else:
-            raise Issue("the constraint you tried to add isn't an instance of SchemaConstraint")
+            raise Issue("the constraint you tried to add isn't an instance of Constraint")
 
     def Speak(self):
         # first let us construct the schema part
@@ -135,9 +135,11 @@ then a list of upsert fields.
 
 class UpsertField:
 
-    def __init__(self, name, type, value):
-        self.name = name
-        self.type = type
+    def __init__(self, field, value):
+        if not isinstance(field, Field):
+            raise Issue("the field you tried to add isn't an instance of Field")
+        self.name = field.name
+        self.type = field.type
         self.value = value
 
 class Upsert(Character):
@@ -253,14 +255,16 @@ class QueryField:
     def RemoveName(self):
         self.name = None
 
-    def SetField(self, field_name, type, as_name=True):
+    def SetField(self, field, as_name=True):
         # this sets the content as a field name. If as_name is true
         # it also sets name to the field_name
-        self.content = field_name
+        if not isinstance(field, Field):
+            raise Issue("the field you tried to add isn't an instance of Field")
+        self.content = field.name
         self.kind = 'FIELD'
-        self.type = type
+        self.type = field.type
         if as_name:
-            self.name = field_name
+            self.name = field.name
 
     def SetValue(self, value, type='GenericType'):
         # this sets the content as a constant value
@@ -268,10 +272,12 @@ class QueryField:
         self.kind = 'VALUE'
         self.type = type  # just to allow queryfield converter to deal with this
 
-    def SetFunction(self, function, argument, type):
+    def SetFunction(self, function, argument):
         # this sets the content as a function
-        self.content = {'function' : function, 'argument' : argument}
-        self.type = type
+        if not isinstance(field, Field):
+            raise Issue("the field you tried to add isn't an instance of Field")
+        self.content = {'function' : function, 'argument' : field.name}
+        self.type = field.type
         self.kind = 'FUNCTION'
 
     def SetTable(self, table):
