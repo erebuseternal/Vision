@@ -93,10 +93,10 @@ class HTTPServer(basic.lineReceiver):
         if not self.parsed_request_line:
             self.line_parser = self.header_lineParser
             self.parsed_request_line = True
-        # we've come to the end. Time to resent and call the method to create
+        # we've come to the end. Time to reset and call the method to create
         # and send the response
         if not line:
-            # we need to remove the last new line off of the body
+            # we need to remove the last new-line off of the body
             self.body = self.body[:-1]
             self.parsed_request_line = False
             self.line_parser = self.request_lineParser
