@@ -311,16 +311,23 @@ def nodeconvert(node, is_solr=True):
     nodeconvert(node.sibling, is_solr)
 
 # okay now to get the key values given a select statement
-def getKeyValues(key_field, select):
+def getKeySelect(key_field, statement, is_select=True):
     # this will return a select statement that will get us our keys
     # first we have to convert the where and having to phoenix versions
     # i.e. at least make sure they are in that form
-    key_select = deepcopy(select)
-    key_select.fields = []
-    key_select.AddField(key_field)
-    key_select.where = convertConditions(key_select.where)
-    key_select.having = convertConditions(key_select.having)
-    return key_select
+    if is_select:
+        key_statement = Select()
+    else:
+        key_statement = Delete()
+    key_statement.fields = []
+    key_statement.SetTable(deepcopy(statement.table))
+    key_statement.AddField(key_field)
+    key_statement.where = convertConditions(statement.where)
+    if is_select:
+        key_statement.having = convertConditions(statement.having)
+        key_statement.groupby = deepcopy(statement.groupby)
+        key_statement.orderby = deepcopy(statement.orderby)
+    return key_statement
 
 # next we are going to use a key value to get create a select statement for
 # a separate table field
@@ -355,3 +362,47 @@ def getSeparateTableSelect(query_field, key_field, key_value):
     # finally we need to order by id
     select.AddOrderBy(orderby)
     return select
+
+def getSeparateTableDelete(query_field, key_field, key_values):
+    delete = Delete()
+    delete.SetTable(query_field.name)
+    key_field = queryFieldConverter(key_field)
+    for key in key_values:
+        condition = QueryCondition()
+        condition.AddOperand(key_field, QueryField().SetValue(key, key_field.type))
+        condition.AddOperator('=')
+        delete.AddWhereCondition(condition, 'OR')
+
+
+"""
+Note that when we query data we are querying from one base table and one
+base table only. This is because that's how solr works, one index at a time.
+Also it keeps from a lot of confusion and mayhem
+"""
+
+def translateCreate(create, key_field):
+    # we are going to go through each field and keep and convert the ones that
+    # don't need a new table, and create create statements for those that do
+    creates = []
+    base_create = Create()
+    creates.append(base_create)
+    base_create.SetTableName(create.table_name)
+    base_create.constraints = deepcopy(create.constraints)
+    for field in create.fields:
+        if (new_field = fieldConverter(field)):
+            base_create.AddField(new_field)
+        else:
+            creates.append(fieldToCreate(field, key_field))
+    return creates
+
+def translateUpsert(upsert, key_field):
+    upserts = []
+    base_upsert = Upsert()
+    upserts.append(base_upsert)
+    base_upsert.SetTableName(upsert.table_name)
+    for field in upsert.fields:
+        if (new_field = upsertFieldConverter(field)):
+            base_upsert.AddField(new_field)
+        else:
+            upserts.extend(upsertFieldToUpsert(field, key_field))
+    return upserts
