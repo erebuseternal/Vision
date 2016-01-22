@@ -8,7 +8,7 @@ class Issue(Exception):
     def __str__(self):
         return 'ERROR: the problem was: %s' % self.problem
 
-class HTTPMessageObject:
+class HTTPComponent:
     """
     This class embodies the idea that you shouldbe able to parse
     a line that comes from an http message that corresponds to this
@@ -35,7 +35,7 @@ class HTTPMessageObject:
         # the string rep should be the http message version of this object
         return self.WriteLine()
 
-class Status(HTTPMessageObject):
+class Status(HTTPComponent):
 
     codes = {100: 'Continue', 101: 'Switching Protocols', 102: 'Processing',
         103: 'Checkpoint', 200: 'OK', 201: 'Created', 202: 'Accepted',
@@ -59,23 +59,30 @@ class Status(HTTPMessageObject):
         506: 'Variant Also Negotiates', 507: 'Insufficient Storage', 508: 'Loop Detected',
         510: 'Not Extended', 511: 'Network Authentication Required'}
 
-    def __init__(self, code):
+    def __init__(self, code=None):
+        if not code:
+            self.code = None
+            self.message = None
+            return
         code = int(code)    # someone might try inputting a string
         # we will initiate the two parts of status right here.
         # so all you have to do is input the code on initiation and bam you've
         # got it all and don't have to worry about what the message is
-        self.code = code
-        self.message = self.codes[code]
+        if code in self.codes:
+            self.code = code
+            self.message = self.codes[code]
+        else:
+            raise Issue('Input Code %s Not Found In Codes' % code)
 
     def ParseLine(self, line):
         # first we compile the regular expression we will be using
-        re_expression = re.compile('([1-5][0-9][0-9]) [a-zA-Z\-\']')
+        re_expression = re.compile('([1-5][0-9][0-9]) [a-zA-Z\-\'][\sa-zA-Z\-\']*')
         # now try for a single (and first) match
         match = re.search(re_expression, line)
         checkMatch(match, line, 'Version')
         # now that we are all good
-        if match.group(1) in self.codes
-            self.code = match.group(1)
+        if int(match.group(1)) in self.codes:
+            self.code = int(match.group(1))
             # now to be consistent we are going to set the message as the one
             # in codes corresponding to code
             self.message = self.codes[self.code]
@@ -87,7 +94,13 @@ class Status(HTTPMessageObject):
         # in the status line of an http response
         return '%s %s' % (self.code, self.message)
 
-class Header(HTTPMessageObject):
+    def __eq__(self, other):
+        if self.code == other.code and self.message == other.message:
+            return True
+        else:
+            return False
+
+class Header(HTTPComponent):
 
     name = None
     values = []
@@ -111,7 +124,7 @@ class Header(HTTPMessageObject):
         re_expression = re.compile('([\S]{1,})[\s]*:[\s]*([\s\S]*[\S])')
         # next we go ahead and try to find a match in the line that was given
         # we are only looking for one (and the first) match
-        match = re.search(re_expression, line):
+        match = re.search(re_expression, line)
         checkMatch(match, line, 'Header')
         # now that we are all good
         # the name will be in the first group
@@ -119,7 +132,7 @@ class Header(HTTPMessageObject):
         # next we get the portion of the string which contains our values
         values_string = match.group(2)
         # we separate the string into the values by comma
-        values = values.split(',')
+        values = values_string.split(',')
         # now we are going to use the next few lines to get rid of
         # whitespace around the values
         cleaned_values = []
@@ -142,16 +155,25 @@ class Header(HTTPMessageObject):
         # and we are done and can return the line :)
         return line
 
-class Url(HTTPMessageObject):
+    def __eq__(self, other):
+        if not self.name == other.name:
+            return False
+        # to make sure order of values doesn't matter
+        for value in self.values:
+            if not value in other.values:
+                return False
+        return True
 
-    self.scheme = None
-    self.username = None
-    self.password = None
-    self.host = None
-    self.port = None
-    self.path = None
-    self.query = None
-    self.fragment = None
+class Url(HTTPComponent):
+
+    scheme = None
+    username = None
+    password = None
+    host = None
+    port = None
+    path = None
+    query = None
+    fragment = None
 
     # in each of the following set methods we are going to make sure
     # that each input in is the right form using regular expressions
@@ -274,6 +296,25 @@ class Url(HTTPMessageObject):
         # and now we are done and can return the line! :D
         return line
 
+    def __eq__(self, other):
+        if self.scheme != other.scheme:
+            return False
+        if self.host != other.host:
+            return False
+        if self.username != other.username:
+            return False
+        if self.password != other.password:
+            return False
+        if self.port != other.port:
+            return False
+        if self.path != other.path:
+            return False
+        if self.query != other.query:
+            return False
+        if self.fragment != other.fragment:
+            return False
+        return True
+
 
 """
 So a version is more than just a number. It is essentially an object that let's
@@ -285,13 +326,13 @@ For the first go though, it is just going to have the version number and print
 itself like in a message
 """
 
-class Version(HTTPMessageObject):
+class Version(HTTPComponent):
 
     def __init__(self, number='1.1'):
         # just to make sure it is a string
-        number = number.toString()
+        number = str(number)
         # now we make sure it is the right form
-        re_expression = re.compile('[0-9]:[0-9]{1,}')
+        re_expression = re.compile('[0-9].[0-9]{1,}')
         match = re.search(re_expression, number)
         checkMatch(match, number, 'Version Number')
         # now that we know we are all good we go ahead and set the number
@@ -299,7 +340,7 @@ class Version(HTTPMessageObject):
 
     def ParseLine(self, line):
         # first we compile the regular expression we are going to use
-        re_expression = re.compile('HTTP\/([0-9]:[0-9]{1,})')
+        re_expression = re.compile('HTTP\/([0-9]\.[0-9]{1,})')
         # next we try for a match, and we want one and the first
         match = re.search(re_expression, line)
         checkMatch(match, line, 'Version')
@@ -312,7 +353,12 @@ class Version(HTTPMessageObject):
         line = 'HTTP/%s' % self.number
         return line
 
-class Method(HTTPMessageObject):
+    def __eq__(self, other):
+        if self.number != other.number:
+            return False
+        return True
+
+class Method(HTTPComponent):
     """
     One method has several string representations, therefore it is a bit
     more than its representations, so we will create an additional object
@@ -320,6 +366,15 @@ class Method(HTTPMessageObject):
     """
 
     methods = ['OPTIONS', 'GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'TRACE', 'CONNECT']
+
+    def __init__(self, method=None):
+        if not method:
+            self.method = None
+            return
+        if method.upper() in self.methods:
+            self.method = method.upper()
+        else:
+            raise Issue('Input Method %s Is Not a Valid Method' % method)
 
     def ParseLine(self, line):
         # first we have our regular expression
@@ -339,6 +394,11 @@ class Method(HTTPMessageObject):
         # this is super easy
         line = self.method
         return line
+
+    def __eq__(self, other):
+        if self.method != other.method:
+            return False
+        return True
 
 """
 GENERAL FUNCTIONS
