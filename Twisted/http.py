@@ -8,6 +8,13 @@ class Issue(Exception):
     def __str__(self):
         return 'ERROR: the problem was: %s' % self.problem
 
+class TypeIssue(Issue):
+    def __init__(self, problem_type, required_type):
+        self.required_type = required_type
+        self.problem_type = problem_type
+    def __str__(self):
+        return 'TYPE ERROR: expected type was %s, you tried using type %s' % (self.required_type, self.problem_type)
+
 class HTTPComponent:
     """
     This class embodies the idea that you shouldbe able to parse
@@ -409,24 +416,93 @@ HTTPMessage class
 """
 
 class HTTPMessage:
+    # when creating a child class you should instantiate parseTopLine
+    # and writeTopLine. Everything else is here for you! :D
 
-    version = None
+    version = Version(1.1)
     headers = []
     body = ''
-    place = 'TOP'
-    header_index = 0
+    line_generator = None
+    position = 'TOP'
+
+    # I am adding these seemingly abnoxious methods for consistency in code
+    # because for some classes setting and deleting using methods allows for
+    # the class to constrain certain things in order to give you what you expect
+    # you can still use just the attributes to set things, but these methods
+    # will be safer both in terms of constraints and in terms of making
+    # sure the attributes are in the right form
+
+    def SetVersion(self, version):
+        checkType(version, Version)
+        self.version = version
+
+    def AddHeader(self, header):
+        checkType(header, Header)
+        self.headers.append(header)
+
+    def SetBody(self, body):
+        checkType(body, str)
+        self.body = body
 
     def parseTopLine(self, line):
+        # parsing should return nothing and set everything to do with the line
         # instantiate it for each type of message individually
         # it shouldn't return anything
         pass
-        
+
     def writeTopLine(self):
         # instantiate it for each type of message individually
         # it should return a string
-        return ''
+        return 'Parent Message Object'
 
-    def LineGenerator(self):
+    def parseHeaderLine(self, line):
+        # parsing should return nothing and set everything to do with the line
+        # first we strip whitespace
+        line = line.strip()
+        # now we setup our header
+        header = Header()
+        # next we parse the line
+        header.ParseLine(line)
+        # and now we add the header to headers
+        self.headers.append(header)
+
+    def parseBodyLine(self, line):
+        # now the body in this object is represented as one
+        # string, and it is assumed the lines in the body
+        # are differentiated by newlines so, if there is a line
+        # before (that is a string more than '') we will add a newline
+        # and then the current line
+        if self.body == '':
+            self.body = line
+        else:
+            self.body = '%s\n%s' % (self.body, line)
+
+
+    def ParseLine(self, line):
+        # this method accepts each line of the document in order
+        # and then parses them out, keeping track of state to know what
+        # it is dealing with. It resets when None is passed in for line
+        # first we check to check if the line is None
+        if not line:
+            # in this case we reset parse line
+            self.position = 'TOP'
+        elif self.position == 'TOP':
+            # first we reset the required state
+            self.body = ''
+            self.headers = []
+            self.parseTopLine(line)
+            self.position = 'HEADERS'
+        elif self.position == 'HEADERS':
+            # we have to check for the blank line before the body
+            if line == '':
+                self.position = 'BODY'
+            else:
+                self.parseHeaderLine(line)
+        elif self.position == 'BODY':
+            self.parseBodyLine(line)
+
+
+    def lineGenerator(self):
         # I am going to make this a generator so that I can easily
         # iterate through lines, and make use of all of that jazz
         # we start with the top
@@ -441,12 +517,125 @@ class HTTPMessage:
         body_lines = self.body.split('\n')
         for line in body_lines:
             yield line
-        # and that's it!
+        # and that's it! we do the following to know when to quit calling next
+        yield None
 
+    def WriteLine(self):
+        # this calls next on a line generator and creates one if there
+        # isn't one.
+        if not self.line_generator:
+            self.line_generator = self.lineGenerator()
+        line = next(self.line_generator)
+        if not line:
+            # the generator has reached its end so we stop
+            self.line_generator = None
+        else:
+            return line
+
+    def Parse(self, message):
+        # this parses the entire message by splitting by newlines adding a None
+        # to the end of those lines to signal the end of the parsing
+        # first we reset all of the state that needs resetting
+        self.body = ''
+        self.headers = []
+        # split by newline
+        lines = message.split('\n')
+        # add none to the end so that ParseLines resets itself
+        lines.append(None)
+        # now we just loop through the lines
+        for line in lines:
+            self.ParseLines(lines)
+
+    def Write(self):
+        # this calls writeline repeatedly until it returns None
+        # it then joins by newline and we are done
+        lines = []
+        while (line = self.WriteLine()):
+            lines.append(line)
+        # now we join the lines
+        message = lines.join('\n')
+        return message
+
+    def __str__(self):
+        # this returns the entire message contained herein
+        return self.Write()
 
 class Response(HTTPMessage):
 
-    status = None
+    # so responses have a status in addition to the version
+    status = Status(200)
+
+    def SetStatus(self, status):
+        checkType(status, Status)
+        self.status = status
+
+    def parseTopLine(self, line):
+        # we are instantiating this for the response class
+        # we have to do two things, we need to grab the version
+        # and we need to grab the message
+        # to do that we will use a regular expression that looks for the first
+        # match of non-whitespace characters followed by one or more whitespace
+        # characters, following by one number and then any number of any characters
+        # our regular expression is
+        re_expression = re.compile('([\S]{1,})\s{1,}([1-5][\s\S]*')
+        match = re.search(re_expression, line)
+        if match:
+            # we get the version
+            version = Version()
+            version.ParseLine(match.group(1))
+            # now we get the status (note we are doing this before setting version
+            # so that if something fails in the top line, it all fails)
+            status = Status()
+            status.ParseLine(match.group(2).strip())
+            # now we set things
+            self.version = version
+            self.status = status
+        else:
+            raise Issue('Status Line Match Not Found in Input Line: %s' % line)
+
+    def writeTopLine(self):
+        # this is easy
+        line = '%s %s' % (self.version, self.status)
+        return line
+
+class Request(HTTPMessage):
+
+    # requests have a method and a url in addition to the status
+    self.url = None
+    self.method = Method('GET')
+
+    def SetUrl(self, url):
+        checkType(url, Url)
+        self.url = url
+
+    def SetMethod(self, method):
+        checkType(method, Method)
+        self.method = method
+
+    def parseTopLine(self, line):
+        # we go like the response class here
+        # our regular expression
+        re_expression = re.compile('([\S]{1,})\s{1,}([\S]{1,})\s{1,}([\S]{1,})')
+        match = re.search(re_expression, line)
+        if match:
+            # we start creating things (and we create all before we set so that
+            # if something fails, everything does)
+            method = Method()
+            method.ParseLine(match.group(1))
+            url = Url()
+            url.ParseLine(match.group(2))
+            version = Version()
+            version.ParseLine(match.group(3))
+            # now we can set things
+            self.method = method
+            self.url = url
+            self.version = version
+        else:
+            raise Issue('Request Line Match Not Found in Input Line: %s' % line)
+
+    def writeTopLine(self):
+        # easy peasy lemon squeezy
+        line = '%s %s %s' % (self.method, self.url, self.version)
 
 """
 GENERAL FUNCTIONS
@@ -463,3 +652,8 @@ def checkMatch(match, input, input_name):
             raise Issue('%s Match In Input Is Only Part Of Input: %s' % (input_name, input))
     else:
         raise Issue('No %s Match Found In Input: %s' % (input_name, input))
+
+def checkType(object, required_type):
+    # this raises an error if the types don't match (or there is no proper inheritance link)
+    if not isinstance(object, required_type):
+        raise TypeIssue(type(object), required_type)
