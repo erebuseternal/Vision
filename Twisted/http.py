@@ -15,6 +15,31 @@ class TypeIssue(Issue):
     def __str__(self):
         return 'TYPE ERROR: expected type was %s, you tried using type %s' % (self.required_type, self.problem_type)
 
+"""
+GENERAL FUNCTIONS
+"""
+
+def checkMatch(match, input, input_name):
+    # this method will raise an error if somethign is wrong with the match
+    # input name is the name used to refer to the input in the error messages
+    # it makes sure the match exists and is equal to input
+    if match:
+        # we want to make sure that the whole expression is this match
+        # otherwise we are going to need to raise an issue
+        if not match.group(0) == input:
+            raise Issue('%s Match In Input Is Only Part Of Input: %s' % (input_name, input))
+    else:
+        raise Issue('No %s Match Found In Input: %s' % (input_name, input))
+
+def checkType(object, required_type):
+    # this raises an error if the types don't match (or there is no proper inheritance link)
+    if not isinstance(object, required_type):
+        raise TypeIssue(type(object), required_type)
+
+"""
+DONE
+"""
+
 class HTTPComponent:
     """
     This class embodies the idea that you shouldbe able to parse
@@ -86,7 +111,7 @@ class Status(HTTPComponent):
         re_expression = re.compile('([1-5][0-9][0-9]) [a-zA-Z\-\'][\sa-zA-Z\-\']*')
         # now try for a single (and first) match
         match = re.search(re_expression, line)
-        checkMatch(match, line, 'Version')
+        checkMatch(match, line, 'Status')
         # now that we are all good
         if int(match.group(1)) in self.codes:
             self.code = int(match.group(1))
@@ -483,7 +508,7 @@ class HTTPMessage:
         # and then parses them out, keeping track of state to know what
         # it is dealing with. It resets when None is passed in for line
         # first we check to check if the line is None
-        if not line:
+        if not line and not line == '':
             # in this case we reset parse line
             self.position = 'TOP'
         elif self.position == 'TOP':
@@ -526,7 +551,7 @@ class HTTPMessage:
         if not self.line_generator:
             self.line_generator = self.lineGenerator()
         line = next(self.line_generator)
-        if not line:
+        if not line and line != '':
             # the generator has reached its end so we stop
             self.line_generator = None
         else:
@@ -544,16 +569,18 @@ class HTTPMessage:
         lines.append(None)
         # now we just loop through the lines
         for line in lines:
-            self.ParseLines(lines)
+            self.ParseLine(line)
 
     def Write(self):
         # this calls writeline repeatedly until it returns None
         # it then joins by newline and we are done
         lines = []
-        while (line = self.WriteLine()):
+        line = self.WriteLine()
+        while line or line == '':
             lines.append(line)
+            line = self.WriteLine()
         # now we join the lines
-        message = lines.join('\n')
+        message = '\n'.join(lines)
         return message
 
     def __str__(self):
@@ -577,7 +604,7 @@ class Response(HTTPMessage):
         # match of non-whitespace characters followed by one or more whitespace
         # characters, following by one number and then any number of any characters
         # our regular expression is
-        re_expression = re.compile('([\S]{1,})\s{1,}([1-5][\s\S]*')
+        re_expression = re.compile('([\S]{1,})\s{1,}([1-5][\s\S]*)')
         match = re.search(re_expression, line)
         if match:
             # we get the version
@@ -601,8 +628,8 @@ class Response(HTTPMessage):
 class Request(HTTPMessage):
 
     # requests have a method and a url in addition to the status
-    self.url = None
-    self.method = Method('GET')
+    url = None
+    method = Method('GET')
 
     def SetUrl(self, url):
         checkType(url, Url)
@@ -636,24 +663,4 @@ class Request(HTTPMessage):
     def writeTopLine(self):
         # easy peasy lemon squeezy
         line = '%s %s %s' % (self.method, self.url, self.version)
-
-"""
-GENERAL FUNCTIONS
-"""
-
-def checkMatch(match, input, input_name):
-    # this method will raise an error if somethign is wrong with the match
-    # input name is the name used to refer to the input in the error messages
-    # it makes sure the match exists and is equal to input
-    if match:
-        # we want to make sure that the whole expression is this match
-        # otherwise we are going to need to raise an issue
-        if not match.group(0) == input:
-            raise Issue('%s Match In Input Is Only Part Of Input: %s' % (input_name, input))
-    else:
-        raise Issue('No %s Match Found In Input: %s' % (input_name, input))
-
-def checkType(object, required_type):
-    # this raises an error if the types don't match (or there is no proper inheritance link)
-    if not isinstance(object, required_type):
-        raise TypeIssue(type(object), required_type)
+        return line
