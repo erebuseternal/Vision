@@ -401,6 +401,54 @@ class Method(HTTPComponent):
         return True
 
 """
+Now we move onto the actual messages. Now these methods come in 'two' forms
+as lines or as a whole body. And we will want to write out in the same fashion.
+Then we have in both a first line, headers lines, a gap and a body. Due to the
+similarities, there is a lot of overlap and so we are going to start with an
+HTTPMessage class
+"""
+
+class HTTPMessage:
+
+    version = None
+    headers = []
+    body = ''
+    place = 'TOP'
+    header_index = 0
+
+    def parseTopLine(self, line):
+        # instantiate it for each type of message individually
+        # it shouldn't return anything
+        pass
+        
+    def writeTopLine(self):
+        # instantiate it for each type of message individually
+        # it should return a string
+        return ''
+
+    def LineGenerator(self):
+        # I am going to make this a generator so that I can easily
+        # iterate through lines, and make use of all of that jazz
+        # we start with the top
+        yield self.writeTopLine()
+        # next we go onto the headers
+        for header in self.headers:
+            yield str(header)
+        # now we create the empty line
+        yield ''
+        # and now we do the body
+        # first we split the body by newlines
+        body_lines = self.body.split('\n')
+        for line in body_lines:
+            yield line
+        # and that's it!
+
+
+class Response(HTTPMessage):
+
+    status = None
+
+"""
 GENERAL FUNCTIONS
 """
 
