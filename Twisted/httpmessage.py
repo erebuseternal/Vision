@@ -452,6 +452,16 @@ class HTTPMessage:
     line_generator = None
     position = 'TOP'
 
+    def Reset(self):
+        # this should be called to clear the message and get it ready for
+        # either parsing or create a message from scratch
+        # this method will be called by ParseLine just before parsing the top
+        # line, and by Parse before it does anything
+        self.body = ''
+        self.has_body = False
+        self.headers = []
+        self.header_names = []
+
     # I am adding these seemingly abnoxious methods for consistency in code
     # because for some classes setting and deleting using methods allows for
     # the class to constrain certain things in order to give you what you expect
@@ -511,10 +521,7 @@ class HTTPMessage:
             self.position = 'TOP'
         elif self.position == 'TOP':
             # first we reset the required state
-            self.body = ''
-            self.has_body = False
-            self.headers = []
-            self.header_names = []
+            self.Reset()
             self.parseTopLine(line)
             self.position = 'HEADERS'
         elif self.position == 'HEADERS':
@@ -557,10 +564,7 @@ class HTTPMessage:
         # this parses the entire message by splitting by newlines adding a None
         # to the end of those lines to signal the end of the parsing
         # first we reset all of the state that needs resetting
-        self.body = ''
-        self.has_body = False
-        self.headers = []
-        self.header_names = []
+        self.Reset()
         # split by carriage return newline
         lines = message.split('\r\n')
         # now we just loop through the lines and once we get to the body lines
