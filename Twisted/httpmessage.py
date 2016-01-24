@@ -446,7 +446,9 @@ class HTTPMessage:
 
     version = Version(1.1)
     headers = []
+    header_names = []
     body = ''
+    has_body = False
     line_generator = None
     position = 'TOP'
 
@@ -464,6 +466,10 @@ class HTTPMessage:
     def AddHeader(self, header):
         checkType(header, Header)
         self.headers.append(header)
+        self.header_names.append(header.name)
+        # we check to see if this header indicates a body
+        if header.name == 'Content-Length':
+            self.has_body = True
 
     def SetBody(self, body):
         checkType(body, str)
@@ -490,18 +496,10 @@ class HTTPMessage:
         header.ParseLine(line)
         # and now we add the header to headers
         self.headers.append(header)
-
-    def parseBodyLine(self, line):
-        # now the body in this object is represented as one
-        # string, and it is assumed the lines in the body
-        # are differentiated by newlines so, if there is a line
-        # before (that is a string more than '') we will add a newline
-        # and then the current line
-        if self.body == '':
-            self.body = line
-        else:
-            self.body = '%s\n%s' % (self.body, line)
-
+        self.header_names.append(header.name)
+        # we check to see if this header indicates a body
+        if header.name == 'Content-Length':
+            self.has_body = True
 
     def ParseLine(self, line):
         # this method accepts each line of the document in order
@@ -514,7 +512,9 @@ class HTTPMessage:
         elif self.position == 'TOP':
             # first we reset the required state
             self.body = ''
+            self.has_body = False
             self.headers = []
+            self.header_names = []
             self.parseTopLine(line)
             self.position = 'HEADERS'
         elif self.position == 'HEADERS':
@@ -523,8 +523,6 @@ class HTTPMessage:
                 self.position = 'BODY'
             else:
                 self.parseHeaderLine(line)
-        elif self.position == 'BODY':
-            self.parseBodyLine(line)
 
 
     def lineGenerator(self):
@@ -537,12 +535,7 @@ class HTTPMessage:
             yield str(header)
         # now we create the empty line
         yield ''
-        # and now we do the body
-        # first we split the body by newlines
-        body_lines = self.body.split('\n')
-        for line in body_lines:
-            yield line
-        # and that's it! we do the following to know when to quit calling next
+        # and we finally return None to say this is finished
         yield None
 
     def WriteLine(self):
@@ -551,11 +544,14 @@ class HTTPMessage:
         if not self.line_generator:
             self.line_generator = self.lineGenerator()
         line = next(self.line_generator)
-        if not line and line != '':
+        if not line and not line == '':
             # the generator has reached its end so we stop
             self.line_generator = None
         else:
             return line
+
+    def WriteBody(self):
+        return self.body
 
     def Parse(self, message):
         # this parses the entire message by splitting by newlines adding a None
@@ -563,24 +559,35 @@ class HTTPMessage:
         # first we reset all of the state that needs resetting
         self.body = ''
         self.headers = []
-        # split by newline
-        lines = message.split('\n')
-        # add none to the end so that ParseLines resets itself
-        lines.append(None)
-        # now we just loop through the lines
+        # split by carriage return newline
+        lines = message.split('\r\n')
+        # now we just loop through the lines and once we get to the body lines
+        # we add them to the following list
+        body_lines = []
         for line in lines:
-            self.ParseLine(line)
+            if not self.position == 'BODY':
+                self.ParseLine(line)
+            else:
+                body_lines.append(line)
+        # now we join up the body and and add it
+        body = '\r\n'.join(body_lines)
+        self.AddBody(body)
+        # and we are done once we reset the line parser
+        self.ParseLine(None)
+
 
     def Write(self):
         # this calls writeline repeatedly until it returns None
         # it then joins by newline and we are done
         lines = []
         line = self.WriteLine()
-        while line or line == '':
+        while line:
             lines.append(line)
             line = self.WriteLine()
         # now we join the lines
-        message = '\n'.join(lines)
+        message = '\r\n'.join(lines)
+        # now we add the body
+        message = '%s%s' % (message, self.body)
         return message
 
     def __str__(self):
