@@ -1,0 +1,9 @@
+def connectionLost(self, reason):
+      # the reactor has to go in here because if I call the reactor within a method
+      # that is part of calling sendResponse, the response stuff doesn't go through.
+      # it's like methods need to stop and a new event register before the
+      # lines register in the buffer. So if I call this code here in an event
+      # driven method we are all good.
+      # all of this is a bit wack. I'm going to want to look at this more
+      # closely in the future.
+      reactor.stop()

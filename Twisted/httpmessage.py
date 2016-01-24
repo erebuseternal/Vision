@@ -27,9 +27,9 @@ def checkMatch(match, input, input_name):
         # we want to make sure that the whole expression is this match
         # otherwise we are going to need to raise an issue
         if not match.group(0) == input:
-            raise Issue('%s Match In Input Is Only Part Of Input: %s' % (input_name, input))
+            raise Issue('%s Match - %s - In Input Is Only Part Of Input: %s' % (input_name, match.group(0).__repr__(), input.__repr__()))
     else:
-        raise Issue('No %s Match Found In Input: %s' % (input_name, input))
+        raise Issue('No %s Match Found In Input: %s' % (input_name, input.__repr__()))
 
 def checkType(object, required_type):
     # this raises an error if the types don't match (or there is no proper inheritance link)
@@ -285,7 +285,7 @@ class Url(HTTPComponent):
         # built from  [scheme:][[//][username:password@]host[:port]][path][?query][#fragment]
         # we are assuming that if we have a host address we will have a scheme
         # and yeah it's pretty long... o_o
-        re_expression = re.compile('(?:([a-zA-z0-9+\-.]{1,}):)?(?:\/\/(?:([a-zA-z0-9+\-.]{1,}):([a-zA-z0-9+\-.]{1,})@)?([a-zA-z0-9+\-.]{1,})(?::([0-9]{1,}))?)?(\/?[a-zA-z0-9+\-.%][a-zA-z0-9+\-.%\/]*)?(?:\?([^\s#]{1,}))?(?:#([\S]*))?')
+        re_expression = re.compile('(?:([a-zA-z0-9+\-.]{1,}):)?(?:\/\/(?:([a-zA-z0-9+\-.]{1,}):([a-zA-z0-9+\-.]{1,})@)?([a-zA-z0-9+\-.]{1,})(?::([0-9]{1,}))?)?(\/?[a-zA-z0-9+\-.%\/]*)?(?:\?([^\s#]{1,}))?(?:#([\S]*))?')
         # next we try to get a match and we only want one and the first match from the line
         match = re.search(re_expression, line)
         checkMatch(match, line, 'Url')
@@ -484,6 +484,7 @@ class HTTPMessage:
     def SetBody(self, body):
         checkType(body, str)
         self.body = body
+        self.has_body = True
 
     def parseTopLine(self, line):
         # parsing should return nothing and set everything to do with the line
