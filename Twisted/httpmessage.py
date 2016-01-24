@@ -558,7 +558,9 @@ class HTTPMessage:
         # to the end of those lines to signal the end of the parsing
         # first we reset all of the state that needs resetting
         self.body = ''
+        self.has_body = False
         self.headers = []
+        self.header_names = []
         # split by carriage return newline
         lines = message.split('\r\n')
         # now we just loop through the lines and once we get to the body lines
