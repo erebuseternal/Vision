@@ -134,13 +134,11 @@ class Status(HTTPComponent):
 
 class Header(HTTPComponent):
 
-    name = None
-    values = []
-
     def __init__(self, name=None, value=None):
         # this way you can just setup a simple name: value
         # header during inititation to save lines of code
         self.name = name
+        self.values = []
         if value:
             self.values.append(value)
 
@@ -198,14 +196,16 @@ class Header(HTTPComponent):
 
 class Url(HTTPComponent):
 
-    scheme = None
-    username = None
-    password = None
-    host = None
-    port = None
-    path = None
-    query = None
-    fragment = None
+    def __init__(self):
+        self.scheme = None
+        self.username = None
+        self.password = None
+        self.host = None
+        self.port = None
+        self.path = None
+        self.query = None
+        self.fragment = None
+
 
     # in each of the following set methods we are going to make sure
     # that each input in is the right form using regular expressions
@@ -444,13 +444,15 @@ class HTTPMessage:
     # when creating a child class you should instantiate parseTopLine
     # and writeTopLine. Everything else is here for you! :D
 
-    version = Version(1.1)
-    headers = []
-    header_names = []
-    body = ''
-    has_body = False
-    line_generator = None
-    position = 'TOP'
+    def __init__(self):
+        self.version = Version(1.1)
+        self.headers = []
+        self.header_names = []
+        self.body = ''
+        self.has_body = False
+        self.line_generator = None
+        self.position = 'TOP'
+
 
     def Reset(self):
         # this should be called to clear the message and get it ready for
@@ -485,6 +487,9 @@ class HTTPMessage:
         checkType(body, str)
         self.body = body
         self.has_body = True
+        # now we are going to add a content length header
+        header = Header('Content-Length', len(self.body))
+        self.AddHeader(header)
 
     def parseTopLine(self, line):
         # parsing should return nothing and set everything to do with the line
@@ -604,7 +609,9 @@ class HTTPMessage:
 class Response(HTTPMessage):
 
     # so responses have a status in addition to the version
-    status = Status(200)
+    def __init__(self):
+        HTTPMessage.__init__(self)
+        self.status = Status(200)
 
     def SetStatus(self, status):
         checkType(status, Status)
@@ -642,8 +649,10 @@ class Response(HTTPMessage):
 class Request(HTTPMessage):
 
     # requests have a method and a url in addition to the status
-    url = None
-    method = Method('GET')
+    def __init__(self):
+        HTTPMessage.__init__(self)
+        self.url = None
+        self.method = Method('GET')
 
     def SetUrl(self, url):
         checkType(url, Url)
