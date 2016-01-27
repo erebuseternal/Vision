@@ -600,6 +600,7 @@ class KeyBasedStatement:
         checkType(original_statment, WhereCharacter)
         self.key_finder = key_finder
         self.side_table = side_table
+        self.side_field_name = self.side_table.side_field.name
         self.type = type
         self.pk = side_table.pk
 
@@ -607,7 +608,7 @@ class KeyBasedStatement:
         if self.type == Delete:
             return 'DELETE FROM %s WHERE %s IN (%s)' % (self.side_table.name, self.pk, self.key_finder)
         if self.type == Select:
-            return 'SELECT value FROM %s WHERE %s IN (%s) ORDERBY position ASC' % (self.side_table.name, self.pk, self.key_finder)
+            return 'SELECT %s, value FROM %s WHERE %s IN (%s) ORDERBY %s position ASC' % (self.pk.name, self.side_table.name, self.pk.name, self.key_finder, self.pk.name)
 
 class CompleteStatment(WhereCharacter):
 
@@ -625,17 +626,18 @@ class CompleteStatment(WhereCharacter):
         tables = self.table.Split()
         type = type(self)
         main_table = tables[0]
-        side_tables = tables[1:]
         main_statement = type(main_table)
         fields = main_table.GetFields()
         for field_name in fields:
             if field_name in self.fields:
                 main_statement.AddField(field_name)
         statements = [main_statement]
-        key_finder = self.GenerateKeyFinder()
-        for table in side_tables:
-            statement = KeyBasedStatement(type, table, key_finder)
-            statements.append(statement)
+        if len(tables) > 1:
+            side_tables = tables[1:]
+            key_finder = self.GenerateKeyFinder()
+            for table in side_tables:
+                statement = KeyBasedStatement(type, table, key_finder)
+                statements.append(statement)
         return statements
 
 class Select(CompleteStatment):
@@ -646,7 +648,7 @@ class Select(CompleteStatment):
             field_string = '%s%s, ' % (field_string, field_name)
         field_string = field_string[:-2]
         if self.where:
-            line = 'SELECT %s FROM %s WHERE %s' % (field_string, self.table.name, self.where)
+            line = 'SELECT %s FROM %s WHERE %s ORDERBY %s' % (field_string, self.table.name, self.where, self.table.pk.name)
         else:
             line = 'SELECT %s FROM %s' % (field_string, self.table.name)
 
@@ -661,3 +663,123 @@ class Delete(CompleteStatment)
             line = 'DELETE FROM %s WHERE %s' % (field_string, self.table.name, self.where)
         else:
             line = 'DELETE FROM %s' % (field_string, self.table.name)
+
+"""
+We are going to work with phoenix through an interface. This means that we can
+change the actual driver we use as time goes on. This interface has Connect and
+Execute methods, and after execution, values can be accessed through Get and
+we can call next to get the next value
+"""
+
+class Interface:
+
+    def __init__(self):
+        self.connection = None
+        self.cursor = None
+
+    def Connect(self, address):
+        pass
+
+    def Execute(self, statement):
+        pass
+
+    def Next(self):
+        pass
+
+    def Get(self, field_name):
+        pass
+
+    def Close(self):
+        pass
+
+class Executor:
+
+    interface_type = Interface
+
+    def __init__(self, statement, address):
+        checkType(statement, SingleTableCharacter)
+        self.statement = statement
+        self.table = statement.table
+        self.pk_name = self.table.pk.name
+        self.statements = statement.Split()
+        self.main_statement = self.statements[0]
+        if len(self.statements) > 1:
+            self.side_statements = self.statements[1:]
+        else:
+            self.side_statements = []
+        self.address = address
+        self.has_called_next = False
+
+    def Execute(self):
+        self.has_called_next = False
+        if not isinstance(statement, Select):
+            # here is is easy we just execute, there is nothing special to keep
+            # track of
+            interface = self.interface_type()
+            interface.Connect(self.address)
+            for statement in self.statements:
+                interface.Execute(str(statement))
+        else:
+            # here things become more difficult we have to execute each of the
+            # queries, but we must also hold onto cursors for each
+            # then we need to link the names of the cursors that are not part
+            # of the main statement to their field name
+            self.main_cursor = self.interface_type()
+            self.main_cursor.Connect(self.address)
+            self.main_cursor.Execute(str(self.main_statement))
+            self.side_cursors = {}  # key will be the side_field_name, value will
+            # be the cursor holding that shit next is where we will actually
+            self.side_values = {}   # this is just being initialized here
+            # put the values together
+            if self.side_statements:
+                for statement in self.side_statements:
+                    cursor = self.interface_type()
+                    cursor.Connect(self.address)
+                    cursor.Execute(str(statement))
+                    side_field_name = statement.side_field_name
+                    type = statement.side_field.type
+                    self.side_cursors[side_field_name] = (cursor, type)
+            # and we are all done here
+
+    def Next(self):
+        # this is going to call next on the main statement, and, if there are side
+        # statements next will be called on them until the key changes and the values
+        # will be recomposed from the pieces. And this will go in the side_value
+        # dictionary
+        self.main_cursor.Next()
+        if self.side_statements:
+            if not self.has_called_next:
+                for field_name in self.side_cursors:
+                    self.side_cursors[field_name][0].Next()    # just to get things started
+            for field_name in self.side_cursors:
+                (cursor, type) = self.side_cursors[field_name]
+                value = self.createSideValue(field_name, cursor, type)
+                self.side_values[field_name] = value
+
+    def Get(self, field_name):
+        # first we see if it is in side values:
+        if field_name in self.side_values:
+            return self.side_values[field_name]
+        else:
+            return self.main_cursor.Get(field_name)
+
+    def createSideValue(self, field_name, cursor, type):
+        # so we call cursor next repeatedly until the pk changes
+        pk_value = cursor.Get(self.pk_name)
+        phoenix_pieces = [cursor.Get(field_name)]
+        while True:
+            cursor.Next()
+            new_pk_value = cursor.Get(self.pk_name)
+            if new_pk_value != pk_value:
+                break
+            else:
+                phoenix_pieces.append(cursor.Get(field_name))
+        # now we can put the pieces together
+        # first we convert all of the pieces from the phoenix form
+        value_type = type.value_type
+        pieces = []
+        for phoenix_piece in phoenix_pieces:
+            pieces.append(value_type.TurnSolr(phoenix_piece))
+        # now we recombine
+        value = type.Combine(pieces)
+        return value
